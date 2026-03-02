@@ -2,15 +2,16 @@ import { supabase } from '../lib/supabase';
 import { Post, Comment, ValidationStatus } from '../types';
 
 export const communityService = {
-    async fetchPosts(): Promise<Post[]> {
+    async fetchPosts(userId?: string): Promise<Post[]> {
         const { data, error } = await supabase
             .from('posts')
             .select(`
         *,
-        profiles (name, avatar_url, bio),
+        author:profiles!posts_author_id_fkey (name, avatar_url, bio),
         comments (
-          id, content, created_at, author_id,
-          profiles (name, avatar_url)
+          id, content, created_at, author_id, likes,
+          author:profiles!comments_author_id_fkey (name, avatar_url),
+          comment_likes (user_id)
         ),
         post_votes (id, user_id, vote_type)
       `)
@@ -31,19 +32,20 @@ export const communityService = {
             const formattedComments: Comment[] = (row.comments || []).map((c: any) => ({
                 id: c.id,
                 authorId: c.author_id,
-                authorName: c.profiles?.name || 'Membro Oculto',
-                authorAvatar: c.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.profiles?.name || 'M')}&background=f97316&color=fff&bold=true&size=200`,
+                authorName: c.author?.name || 'Membro Oculto',
+                authorAvatar: c.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.author?.name || 'M')}&background=f97316&color=fff&bold=true&size=200`,
                 content: c.content,
                 timestamp: new Date(c.created_at).toLocaleDateString() + ' ' + new Date(c.created_at).toLocaleTimeString().slice(0, 5),
-                likes: 0 // Simplification for MVP
+                likes: c.likes || 0,
+                isLikedByUser: userId ? (c.comment_likes || []).some((cl: any) => cl.user_id === userId) : false
             }));
 
             return {
                 id: row.id,
                 authorId: row.author_id,
-                authorName: row.profiles?.name || 'Membro Oculto',
-                authorAvatar: row.profiles?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.profiles?.name || 'M')}&background=f97316&color=fff&bold=true&size=200`,
-                authorBio: row.profiles?.bio || '',
+                authorName: row.author?.name || 'Membro Oculto',
+                authorAvatar: row.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(row.author?.name || 'M')}&background=f97316&color=fff&bold=true&size=200`,
+                authorBio: row.author?.bio || '',
                 title: row.title || 'Post Comunitário',
                 content: row.content,
                 category: row.category,
@@ -61,7 +63,7 @@ export const communityService = {
                 fakeVotes: fakeCount,
                 reviewVotes: 0,
                 timestamp: new Date(row.created_at).toLocaleDateString(),
-                reports: 0
+                reports: row.reports || 0
             };
         });
     },
@@ -119,37 +121,79 @@ export const communityService = {
             .eq('post_id', postId)
             .eq('user_id', userId)
             .in('vote_type', inTypes)
-            .single();
+            .maybeSingle();
 
         if (existing) {
             if (existing.vote_type === voteType) {
-                // Toggle off (Unlike or Remove Vote)
-                const { error } = await supabase
-                    .from('post_votes')
-                    .delete()
-                    .eq('id', existing.id);
+                const { error } = await supabase.from('post_votes').delete().eq('id', existing.id);
                 if (error) throw error;
                 return 'removed';
             }
 
-            // Update existing vote (Change from useful to fake or vice versa)
-            const { error } = await supabase
-                .from('post_votes')
-                .update({ vote_type: voteType })
-                .eq('id', existing.id);
-
+            const { error } = await supabase.from('post_votes').update({ vote_type: voteType }).eq('id', existing.id);
             if (error) throw error;
             return 'updated';
         } else {
-            // Insert new vote
-            const { error } = await supabase
-                .from('post_votes')
-                .insert([{
-                    post_id: postId,
-                    user_id: userId,
-                    vote_type: voteType
-                }]);
+            const { error } = await supabase.from('post_votes').insert([{ post_id: postId, user_id: userId, vote_type: voteType }]);
+            if (error) throw error;
+            return 'inserted';
+        }
+    },
 
+    async toggleCommentLike(commentId: string, userId: string) {
+        const { data: existing } = await supabase
+            .from('comment_likes')
+            .select('*')
+            .eq('comment_id', commentId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (existing) {
+            const { error: delError } = await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', userId);
+            if (delError) throw delError;
+
+            await supabase.rpc('decrement_comment_likes', { c_id: commentId });
+            return 'removed';
+        } else {
+            const { error: insError } = await supabase.from('comment_likes').insert([{ comment_id: commentId, user_id: userId }]);
+            if (insError) throw insError;
+
+            await supabase.rpc('increment_comment_likes', { c_id: commentId });
+            return 'inserted';
+        }
+    },
+
+    async reportContent(data: { postId?: string, commentId?: string, userId: string, reason: string, email?: string }) {
+        const { error } = await supabase.from('community_reports').insert([{
+            post_id: data.postId,
+            comment_id: data.commentId,
+            user_id: data.userId,
+            reason: data.reason,
+            reporter_email: data.email
+        }]);
+
+        if (error) throw error;
+
+        // If it was a post, increment its report counter
+        if (data.postId) {
+            await supabase.rpc('increment_post_reports', { p_id: data.postId });
+        }
+    },
+
+    async toggleSavedPost(postId: string, userId: string) {
+        const { data: existing } = await supabase
+            .from('saved_posts')
+            .select('*')
+            .eq('post_id', postId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (existing) {
+            const { error } = await supabase.from('saved_posts').delete().eq('post_id', postId).eq('user_id', userId);
+            if (error) throw error;
+            return 'removed';
+        } else {
+            const { error } = await supabase.from('saved_posts').insert([{ post_id: postId, user_id: userId }]);
             if (error) throw error;
             return 'inserted';
         }

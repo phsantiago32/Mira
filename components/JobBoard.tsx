@@ -38,30 +38,44 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
       setLoading(true);
       try {
         const { data, error } = await supabase.from('job_posts').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
+        if (error) {
+          console.error("MIRA Job Fetch Error:", error);
+          throw error;
+        }
 
-        if (data && data.length > 0) {
+        console.log("MIRA: Vagas recebidas do DB:", data?.length || 0);
+
+        if (data) {
           const formattedJobs: JobPost[] = data.map(dbJob => ({
             id: dbJob.id,
-            title: dbJob.title,
-            location: dbJob.location,
-            sourceName: dbJob.source_name,
-            sourceUrl: dbJob.source_url,
-            datePosted: 'Hoje', // Or you could calculate from dbJob.created_at
+            title: dbJob.title || 'Sem título',
+            location: dbJob.location || 'Portugal',
+            sourceName: dbJob.source_name || 'MIRA',
+            sourceUrl: dbJob.source_url || '#',
+            datePosted: 'Hoje',
             tags: dbJob.tags || [],
-            category: dbJob.category as typeof CATEGORIES[keyof typeof CATEGORIES],
-            workTopic: dbJob.work_topic
+            category: dbJob.category || 'Emprego e Formação',
+            workTopic: dbJob.work_topic || 'Outros'
           }));
           setJobs(formattedJobs);
+          console.log("MIRA: Vagas formatadas e prontas:", formattedJobs.length);
+        } else {
+          setJobs([]);
         }
       } catch (err) {
-        console.error("Erro ao carregar as vagas reais do Supabase:", err);
+        console.error("MIRA Exception in JobBoard:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchJobs();
+    const fetchWithDelay = async () => {
+      // Stagger request to avoid Navigator lock contention
+      await new Promise(resolve => setTimeout(resolve, 500));
+      fetchJobs();
+    };
+
+    fetchWithDelay();
   }, []);
 
   const filteredJobs = jobs.filter(job => {
@@ -142,12 +156,18 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
                 <select
                   value={selectedWorkTopic}
                   onChange={(e) => setSelectedWorkTopic(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest appearance-none outline-none focus:ring-2 focus:ring-mira-orange-pastel border border-transparent transition-all"
+                  className="w-full pl-12 pr-10 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-800 focus:border-mira-orange focus:bg-white transition-all outline-none appearance-none"
                 >
                   <option value="Todos">{t('jobs_all_areas', language)}</option>
                   {WORK_TOPICS.map(topic => (
                     <option key={topic} value={topic}>{topic}</option>
                   ))}
+                  <option value="Administrativo">Administrativo</option>
+                  <option value="Logística">Logística</option>
+                  <option value="Restauração">Restauração</option>
+                  <option value="Saúde">Saúde</option>
+                  <option value="Tecnologia">Tecnologia</option>
+                  <option value="Técnico">Técnico</option>
                 </select>
                 <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
@@ -224,14 +244,14 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
                 <Search size={48} />
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nenhuma vaga encontrada</p>
-                <p className="text-sm font-medium text-slate-400 px-10 leading-relaxed">Tente ajustar os filtros de área profissional ou distrito.</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pode haver um problema na ligação ou os filtros são muito restritos</p>
+                <p className="text-sm font-medium text-slate-400 px-10 leading-relaxed">Temos {jobs.length} vagas no total. Tente selecionar "Todos os Distritos" e "Todas as Áreas".</p>
               </div>
               <button
                 onClick={() => { setSelectedCity('Todos'); setSelectedWorkTopic('Todos'); setSearchQuery(''); }}
                 className="px-8 py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
               >
-                Limpar Todos os Filtros
+                Resetar Filtros
               </button>
             </div>
           )

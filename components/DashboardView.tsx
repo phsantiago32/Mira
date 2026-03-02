@@ -151,14 +151,20 @@ const DashboardView: React.FC<DashboardViewProps> = ({ masterPosts, onUpdatePost
         }, 3000);
     };
 
-    const handleUpdateJobs = () => {
+    const handleUpdateJobs = async () => {
         setIsUpdatingJobs(true);
-        // Simulate job update from external sources
-        setTimeout(() => {
-            alert("MIRA: Sincronização com portais de emprego concluída. 142 novas vagas identificadas e atualizadas.");
-            analytics.track('admin_job_sync', 'admin', 'Jobs');
+        try {
+            const { data, error } = await supabase.functions.invoke('sync-jobs');
+            if (error) throw error;
+
+            alert(`MIRA: Sincronização concluída com sucesso. ${data.count} vagas foram processadas.`);
+            analytics.track('admin_job_sync', 'admin', 'Jobs', { count: data.count });
+        } catch (err) {
+            console.error('Job sync error:', err);
+            alert("Erro ao sincronizar vagas via Cloud Function. Verifique as permissões no Supabase.");
+        } finally {
             setIsUpdatingJobs(false);
-        }, 2500);
+        }
     };
 
     const handleSyncCourses = () => {

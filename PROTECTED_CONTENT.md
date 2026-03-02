@@ -13,6 +13,7 @@
 5. **Login é SEMPRE email + password** — nunca OTP, magic link ou passwordless
 6. O **mapa Leaflet** foi removido do módulo Serviços a pedido — NÃO VOLTAR A ADICIONAR
 7. A aba **Notificações** foi removida do Perfil — a gestão é APENAS no sino da HomeView
+8. No **módulo Serviços**, os filtros de categoria só devem aparecer se existirem serviços para essa categoria na base de dados
 
 ---
 
@@ -147,193 +148,277 @@
 
 | Nome | Morada | Cidade | Website | Categoria BD |
 |---|---|---|---|---|
-| Cruz Vermelha Portuguesa – Delegação de Braga | Rua Bernardo Sequeira, 247, 4715-017 Braga | Braga | https://www.cruzvermelha.pt | Comunidade & Solidariedade |
-| SEIVA – Associação ao Serviço da Vida | Rua de Vilar, 130, 4050-625 Porto | Porto | https://seiva.co.pt | Comunidade & Solidariedade |
-| ASI – Associação Solidariedade Internacional | Rua das Pedras nº 307 e Rua Diogo Cão nº 257 | Vila Nova de Gaia | https://www.asigv.org | Comunidade & Solidariedade |
+| Cruz Vermelha Portuguesa – Delegação de Braga | Rua Bernardo Sequeira, 247, 4715-017 Braga | Braga | https://www.cruzvermelha.pt | Comunidade & Apoio |
+| SEIVA – Associação ao Serviço da Vida | Rua de Vilar, 130, 4050-625 Porto | Porto | https://seiva.co.pt | Comunidade & Apoio |
+| ASI – Associação Solidariedade Internacional | Rua das Pedras nº 307 e Rua Diogo Cão nº 257 | Vila Nova de Gaia | https://www.asigv.org | Comunidade & Apoio |
 
 ### 🟨 CENTRO
 
 | Nome | Morada | Cidade | Website | Categoria BD |
 |---|---|---|---|---|
-| UNIVERA – Centro Social e Paroquial da Vera Cruz | Rua Campeão das Províncias, 1º andar, 3800-124 Aveiro | Aveiro | https://www.cspveracruz.pt | Comunidade & Solidariedade |
-| Casa Lusófona ONGD | Avenida Sá da Bandeira 115, 4º piso, Loja 37/38, 3004-515 Coimbra | Coimbra | — | Comunidade & Solidariedade |
-| InPulsar – Associação para o Desenvolvimento Comunitário | Rua Dr. José Gonçalves, nº 55, Loja 3, Piso -1, 2410-121 Leiria | Leiria | http://www.inpulsar.pt | Comunidade & Solidariedade |
+| UNIVERA – Centro Social e Paroquial da Vera Cruz | Rua Campeão das Províncias, 1º andar, 3800-124 Aveiro | Aveiro | https://www.cspveracruz.pt | Comunidade & Apoio |
+| Casa Lusófona ONGD | Avenida Sá da Bandeira 115, 4º piso, Loja 37/38, 3004-515 Coimbra | Coimbra | — | Comunidade & Apoio |
+| InPulsar – Associação para o Desenvolvimento Comunitário | Rua Dr. José Gonçalves, nº 55, Loja 3, Piso -1, 2410-121 Leiria | Leiria | http://www.inpulsar.pt | Comunidade & Apoio |
 
 ### 🟧 LISBOA E VALE DO TEJO
 
 | Nome | Morada | Cidade | Website | Categoria BD |
 |---|---|---|---|---|
-| Centro Social e Paroquial Costa da Caparica | Avenida 1º de Maio, nº 4, R/C, 2825-395 Costa da Caparica | Almada | https://www.cspcostacap.org | Comunidade & Solidariedade |
-| Centro Cultural Moldavo | Rua José Malhoa, nº 11, Trajouce, 2785-657 São Domingos de Rana | Cascais | — | Comunidade & Solidariedade |
-| BYP – Batoto Yetu Portugal | Avenida João de Freitas Branco, nº 12, 2760-073 Caxias | Oeiras | https://batotoyetu.org | Comunidade & Solidariedade |
-| AGUINENSO – Associação Guineense de Solidariedade Social | Avenida João Paulo II, Lote 528, 2A, Bairro do Condado, 1950-430 Lisboa | Lisboa | — | Comunidade & Solidariedade |
-| Município de Odivelas – Serviço de Apoio ao Imigrante | Rua Alfredo Roque Gameiro, nº 18B, 2675-277 Odivelas | Odivelas | https://www.cm-odivelas.pt | Documentos & Regularização |
-| Associação ProAbraçar | Praceta do Chapim, nº 26, R/C, 2080-048 Almeirim | Almeirim | — | Comunidade & Solidariedade |
-| Fábrica da Igreja de Nossa Senhora da Conceição | Avenida Bento de Jesus Caraça, nº 77, 2910-430 Setúbal | Setúbal | — | Comunidade & Solidariedade |
+| Centro Social e Paroquial Costa da Caparica | Avenida 1º de Maio, nº 4, R/C, 2825-395 Costa da Caparica | Almada | https://www.cspcostacap.org | Comunidade & Apoio |
+| Centro Cultural Moldavo | Rua José Malhoa, nº 11, Trajouce, 2785-657 São Domingos de Rana | Cascais | — | Comunidade & Apoio |
+| BYP – Batoto Yetu Portugal | Avenida João de Freitas Branco, nº 12, 2760-073 Caxias | Oeiras | https://batotoyetu.org | Comunidade & Apoio |
+| AGUINENSO – Associação Guineense de Solidariedade Social | Avenida João Paulo II, Lote 528, 2A, Bairro do Condado, 1950-430 Lisboa | Lisboa | — | Comunidade & Apoio |
+| Município de Odivelas – Serviço de Apoio ao Imigrante | Rua Alfredo Roque Gameiro, nº 18B, 2675-277 Odivelas | Odivelas | https://www.cm-odivelas.pt | Residência e Legalização |
+| Associação ProAbraçar | Praceta do Chapim, nº 26, R/C, 2080-048 Almeirim | Almeirim | — | Comunidade & Apoio |
+| Fábrica da Igreja de Nossa Senhora da Conceição | Avenida Bento de Jesus Caraça, nº 77, 2910-430 Setúbal | Setúbal | — | Comunidade & Apoio |
 
 ### 🟥 ALENTEJO
 
 | Nome | Morada | Cidade | Website | Categoria BD |
 |---|---|---|---|---|
-| Câmara Municipal de Beja – Divisão de Desenvolvimento Social | Rua de Angola, nº 5, 7800-468 Beja | Beja | https://www.cm-beja.pt | Documentos & Regularização |
-| Associação Caboverdiana de Sines e Santiago do Cacém | Rua João Doroteia, Lote LE1, 7520-109 Sines | Sines | — | Comunidade & Solidariedade |
+| Câmara Municipal de Beja – Divisão de Desenvolvimento Social | Rua de Angola, nº 5, 7800-468 Beja | Beja | https://www.cm-beja.pt | Residência e Legalização |
+| Associação Caboverdiana de Sines e Santiago do Cacém | Rua João Doroteia, Lote LE1, 7520-109 Sines | Sines | — | Comunidade & Apoio |
 
 ### 🟦 ALGARVE
 
 | Nome | Morada | Cidade | Website | Categoria BD |
 |---|---|---|---|---|
-| DOINA – Associação de Imigrantes Romenos e Moldavos do Algarve | Avenida 5 de Outubro, Porta 76, 8135-100 Almancil | Loulé | — | Comunidade & Solidariedade |
-| GRATO – Grupo de Apoio a Toxicodependentes | Avenida Guanaré (Pavilhão), 8500-507 Portimão | Portimão | — | Comunidade & Solidariedade |
+| DOINA – Associação de Imigrantes Romenos e Moldavos do Algarve | Avenida 5 de Outubro, Porta 76, 8135-100 Almancil | Loulé | — | Comunidade & Apoio |
+| GRATO – Grupo de Apoio a Toxicodependentes | Avenida Guanaré (Pavilhão), 8500-507 Portimão | Portimão | — | Comunidade & Apoio |
 
 ### 🤝 ORGANIZAÇÕES DE APOIO NACIONAL / ONGs
 
 | Nome | Morada | Cidade | Website | Categoria BD |
 |---|---|---|---|---|
-| JRS Portugal – Serviço Jesuíta aos Refugiados | Lisboa (sede nacional) | Lisboa | https://www.jrsportugal.pt | Comunidade & Solidariedade |
-| Conselho Português para os Refugiados (CPR) | Estrada da Costa, nº 1359, 2750-642 Cascais | Cascais | https://www.cpr.pt | Documentos & Regularização |
-| Solidariedade Imigrante (SOLIM) | Rua do Benformoso, 289, 1100-085 Lisboa | Lisboa | https://www.solim.org | Comunidade & Solidariedade |
-| Casa do Brasil de Lisboa | Rua Luz Soriano, nº 42, 1200-246 Lisboa | Lisboa | https://www.casadobrasil.pt | Comunidade & Solidariedade |
-| Refugees Welcome Portugal | Lisboa | Lisboa | https://refugeeswelcomepor.org | Comunidade & Solidariedade |
-| APIRP – Associação de Apoio a Imigrantes e Refugiados em Portugal | Lisboa | Lisboa | https://apirp.pt | Comunidade & Solidariedade |
-| FEMAFRO – Associação de Mulheres Negras, Africanas e Afrodescendentes | Lisboa | Lisboa | https://femafro.org | Comunidade & Solidariedade |
-| Médicos do Mundo Portugal | Rua dos Lusíadas, 64 A, 1300-366 Lisboa | Lisboa | https://www.medicosdomundo.pt | Saúde & Bem-Estar |
-| Cáritas Portuguesa | Av. Marechal Craveiro Lopes, nº 165, 1749-009 Lisboa | Lisboa | https://www.caritas.pt | Comunidade & Solidariedade |
-| Open Gate Portugal | Lisboa | Lisboa | https://opengateportugal.org | Comunidade & Solidariedade |
-| ADIP – Associação Despertar Imigrantes em Portugal | Lisboa | Lisboa | https://adip.pt | Comunidade & Solidariedade |
-| CNAIM Lisboa | Lisboa | Lisboa | https://aima.gov.pt | Documentos & Regularização |
-| CNAIM Porto | Porto | Porto | https://aima.gov.pt | Documentos & Regularização |
-| CNAIM Faro | Faro | Faro | https://aima.gov.pt | Documentos & Regularização |
-| CLAIM – Centros Locais de Apoio à Integração de Migrantes | Rede nacional | Nacional | https://aima.gov.pt | Documentos & Regularização |
+| JRS Portugal – Serviço Jesuíta aos Refugiados | Lisboa (sede nacional) | Lisboa | https://www.jrsportugal.pt | Comunidade & Apoio |
+| Conselho Português para os Refugiados (CPR) | Estrada da Costa, nº 1359, 2750-642 Cascais | Cascais | https://www.cpr.pt | Residência e Legalização |
+| Solidariedade Imigrante (SOLIM) | Rua do Benformoso, 289, 1100-085 Lisboa | Lisboa | https://www.solim.org | Comunidade & Apoio |
+| Casa do Brasil de Lisboa | Rua Luz Soriano, nº 42, 1200-246 Lisboa | Lisboa | https://www.casadobrasil.pt | Comunidade & Apoio |
+| Refugees Welcome Portugal | Lisboa | Lisboa | https://refugeeswelcomepor.org | Comunidade & Apoio |
+| APIRP – Associação de Apoio a Imigrantes e Refugiados em Portugal | Lisboa | Lisboa | https://apirp.pt | Comunidade & Apoio |
+| FEMAFRO – Associação de Mulheres Negras, Africanas e Afrodescendentes | Lisboa | Lisboa | https://femafro.org | Comunidade & Apoio |
+| Médicos do Mundo Portugal | Rua dos Lusíadas, 64 A, 1300-366 Lisboa | Lisboa | https://www.medicosdomundo.pt | Saúde (SNS) |
+| Cáritas Portuguesa | Av. Marechal Craveiro Lopes, nº 165, 1749-009 Lisboa | Lisboa | https://www.caritas.pt | Comunidade & Apoio |
+| Open Gate Portugal | Lisboa | Lisboa | https://opengateportugal.org | Comunidade & Apoio |
+| ADIP – Associação Despertar Imigrantes em Portugal | Lisboa | Lisboa | https://adip.pt | Comunidade & Apoio |
+| CNAIM Lisboa | Lisboa | Lisboa | https://aima.gov.pt | Residência e Legalização |
+| CNAIM Porto | Porto | Porto | https://aima.gov.pt | Residência e Legalização |
+| CNAIM Faro | Faro | Faro | https://aima.gov.pt | Residência e Legalização |
+| CLAIM – Centros Locais de Apoio à Integração de Migrantes | Rede nacional | Nacional | https://aima.gov.pt | Residência e Legalização |
 
 ### 💼 Centros de Emprego (IEFP)
 
 #### 🟦 NORTE
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Centro de Emprego de Braga | Rua de São Marcos, 126 | Braga | https://www.iefp.pt |
-| Centro de Emprego do Porto | Rua de Entre Quintas, 4440-213 Alfena | Porto | https://www.iefp.pt |
-| Centro de Emprego de Guimarães | Rua da Rainha D. Mafalda | Guimarães | https://www.iefp.pt |
-| Centro de Emprego de Viana do Castelo | Largo de Camões | Viana do Castelo | https://www.iefp.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Centro de Emprego de Braga | Rua de São Marcos, 126 | Braga | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego do Porto | Rua de Entre Quintas, 4440-213 Alfena | Porto | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Guimarães | Rua da Rainha D. Mafalda | Guimarães | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Viana do Castelo | Largo de Camões | Viana do Castelo | https://www.iefp.pt | Emprego e Formação |
 
 #### 🟩 CENTRO
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Centro de Emprego de Aveiro | Rua do Comércio | Aveiro | https://www.iefp.pt |
-| Centro de Emprego de Coimbra | Rua Visconde da Luz | Coimbra | https://www.iefp.pt |
-| Centro de Emprego de Leiria | Rua Carreira dos Rapazes | Leiria | https://www.iefp.pt |
-| Centro de Emprego de Viseu | Rua do Comércio | Viseu | https://www.iefp.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Centro de Emprego de Aveiro | Rua do Comércio | Aveiro | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Coimbra | Rua Visconde da Luz | Coimbra | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Leiria | Rua Carreira dos Rapazes | Leiria | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Viseu | Rua do Comércio | Viseu | https://www.iefp.pt | Emprego e Formação |
 
 #### 🟨 LISBOA E VALE DO TEJO
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Centro de Emprego de Lisboa — Picoas | Av. Fontes Pereira de Melo, 14 | Lisboa | https://www.iefp.pt |
-| Centro de Emprego Almada / Seixal | Rua de Queluz, Lt. 54 A | Almada | https://www.iefp.pt |
-| Centro de Emprego de Oeiras | Rua Manuel da Maia, 2 | Oeiras | https://www.iefp.pt |
-| Centro de Emprego de Sintra | Estrada de Mem Martins | Sintra | https://www.iefp.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Centro de Emprego de Lisboa — Picoas | Av. Fontes Pereira de Melo, 14 | Lisboa | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego Almada / Seixal | Rua de Queluz, Lt. 54 A | Almada | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Oeiras | Rua Manuel da Maia, 2 | Oeiras | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Sintra | Estrada de Mem Martins | Sintra | https://www.iefp.pt | Emprego e Formação |
 
 #### 🟥 ALENTEJO
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Centro de Emprego de Évora | Rua do Cardeal D. Alexandre | Évora | https://www.iefp.pt |
-| Centro de Emprego de Beja | Rua do Pará | Beja | https://www.iefp.pt |
-| Centro de Emprego de Portalegre | Rua de Santo António | Portalegre | https://www.iefp.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Centro de Emprego de Évora | Rua do Cardeal D. Alexandre | Évora | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Beja | Rua do Pará | Beja | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Portalegre | Rua de Santo António | Portalegre | https://www.iefp.pt | Emprego e Formação |
 
 #### 🟧 ALGARVE
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Centro de Emprego de Faro | Rua Conselheiro Bivar | Faro | https://www.iefp.pt |
-| Centro de Emprego de Loulé | Av. 5 de Outubro, 3 | Loulé | https://www.iefp.pt |
-| Centro de Emprego de Portimão | Rua dos Campeões Olímpicos | Portimão | https://www.iefp.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Centro de Emprego de Faro | Rua Conselheiro Bivar | Faro | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Loulé | Av. 5 de Outubro, 3 | Loulé | https://www.iefp.pt | Emprego e Formação |
+| Centro de Emprego de Portimão | Rua dos Campeões Olímpicos | Portimão | https://www.iefp.pt | Emprego e Formação |
 
 ### 🟠 AIMA / ACM — Agência para a Integração, Migrações e Asilo
 
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| AIMA – Unidade de Lisboa (CNAIM) | Rua Álvaro Coutinho, 14–16 | Lisboa | https://aima.gov.pt |
-| AIMA – Unidade do Porto (Norte) | Avenida de França, 316, Edifício Capitólio | Porto | https://aima.gov.pt |
-| AIMA – Unidade de Faro (Algarve) | Loja do Cidadão de Faro, Mercado Municipal | Faro | https://aima.gov.pt |
-| ACM — Apoio ao Migrante | — | Nacional | https://www.gov.pt/pt/servicos/centros-nacionais-de-apoio-a-integracao-de-migrantes-cnaim |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| AIMA – Unidade de Lisboa (CNAIM) | Rua Álvaro Coutinho, 14–16 | Lisboa | https://aima.gov.pt | Residência e Legalização |
+| AIMA – Unidade do Porto (Norte) | Avenida de França, 316, Edifício Capitólio | Porto | https://aima.gov.pt | Residência e Legalização |
+| AIMA – Unidade de Faro (Algarve) | Loja do Cidadão de Faro, Mercado Municipal | Faro | https://aima.gov.pt | Residência e Legalização |
+| ACM — Apoio ao Migrante | — | Nacional | https://www.gov.pt/pt/servicos/centros-nacionais-de-apoio-a-integracao-de-migrantes-cnaim | Residência e Legalização |
 
 ### 🔵 IRN — Instituto dos Registos e Notariado (Centrais)
 
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| IRN – Conservatória Central de Lisboa | Rua de São Bento, 148 | Lisboa | https://irn.justica.gov.pt |
-| IRN – Conservatória Central do Porto | Praça de Gomes Teixeira | Porto | https://irn.justica.gov.pt |
-| IRN – Conservatória Central de Coimbra | Praça 8 de Maio | Coimbra | https://irn.justica.gov.pt |
-| IRN – Conservatória Central de Évora | Praça do Sertório | Évora | https://irn.justica.gov.pt |
-| IRN – Conservatória Central de Faro | Avenida da República, n.º 286 | Faro | https://irn.justica.gov.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| IRN – Conservatória Central de Lisboa | Rua de São Bento, 148 | Lisboa | https://irn.justica.gov.pt | Registos e Nacionalidade |
+| IRN – Conservatória Central do Porto | Praça de Gomes Teixeira | Porto | https://irn.justica.gov.pt | Registos e Nacionalidade |
+| IRN – Conservatória Central de Coimbra | Praça 8 de Maio | Coimbra | https://irn.justica.gov.pt | Registos e Nacionalidade |
+| IRN – Conservatória Central de Évora | Praça do Sertório | Évora | https://irn.justica.gov.pt | Registos e Nacionalidade |
+| IRN – Conservatória Central de Faro | Avenida da República, n.º 286 | Faro | https://irn.justica.gov.pt | Registos e Nacionalidade |
 
 ### 🟡 Conservatórias do Registo Civil – por Região
 
 #### 🟦 NORTE
-| Nome | Morada | Cidade |
-|---|---|---|
-| Conservatória do Registo Civil de Braga | Rua de São Victor | Braga |
-| Conservatória do Registo Civil de Guimarães | Largo Oliveira Martins | Guimarães |
-| Conservatória do Registo Civil de Viana do Castelo | Av. dos Combatentes | Viana do Castelo |
-| Conservatória do Registo Civil de Vila Nova de Gaia | Rua de Santos Pousada | Vila Nova de Gaia |
-| Conservatória do Registo Civil de Matosinhos | Rua de Brito Capelo | Matosinhos |
+| Nome | Morada | Cidade | Categoria BD |
+|---|---|---|---|
+| Conservatória do Registo Civil de Braga | Rua de São Victor | Braga | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Guimarães | Largo Oliveira Martins | Guimarães | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Viana do Castelo | Av. dos Combatentes | Viana do Castelo | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Vila Nova de Gaia | Rua de Santos Pousada | Vila Nova de Gaia | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Matosinhos | Rua de Brito Capelo | Matosinhos | Registos e Nacionalidade |
 
 #### 🟩 CENTRO
-| Nome | Morada | Cidade |
-|---|---|---|
-| Conservatória do Registo Civil de Aveiro | Largo da Praça do Peixe | Aveiro |
-| Conservatória do Registo Civil de Leiria | Praça Rodrigues Lobo | Leiria |
-| Conservatória do Registo Civil de Viseu | Largo da Sé | Viseu |
+| Nome | Morada | Cidade | Categoria BD |
+|---|---|---|---|
+| Conservatória do Registo Civil de Aveiro | Largo da Praça do Peixe | Aveiro | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Leiria | Praça Rodrigues Lobo | Leiria | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Viseu | Largo da Sé | Viseu | Registos e Nacionalidade |
 
 #### 🟨 LISBOA E VALE DO TEJO
-| Nome | Morada | Cidade |
-|---|---|---|
-| Conservatória do Registo Civil de Lisboa (Douradores) | Rua dos Douradores, 109 | Lisboa |
-| Conservatória do Registo Civil de Almada | Avenida Alfredo da Silva | Almada |
-| Conservatória do Registo Civil de Sintra | Rua Dr. Alfredo da Costa | Sintra |
-| Conservatória do Registo Civil de Cascais | Avenida Valbom | Cascais |
+| Nome | Morada | Cidade | Categoria BD |
+|---|---|---|---|
+| Conservatória do Registo Civil de Lisboa (Douradores) | Rua dos Douradores, 109 | Lisboa | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Almada | Avenida Alfredo da Silva | Almada | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Sintra | Rua Dr. Alfredo da Costa | Sintra | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Cascais | Avenida Valbom | Cascais | Registos e Nacionalidade |
 
 #### 🟥 ALENTEJO
-| Nome | Morada | Cidade |
-|---|---|---|
-| Conservatória do Registo Civil de Évora – Central | Praça do Sertório | Évora |
-| Conservatória do Registo Civil de Beja | Rua D. Pedro V | Beja |
+| Nome | Morada | Cidade | Categoria BD |
+|---|---|---|---|
+| Conservatória do Registo Civil de Évora – Central | Praça do Sertório | Évora | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Beja | Rua D. Pedro V | Beja | Registos e Nacionalidade |
 
 #### 🟧 ALGARVE
-| Nome | Morada | Cidade |
-|---|---|---|
-| Conservatória do Registo Civil de Faro – Central | Avenida da República, 286 | Faro |
-| Conservatória do Registo Civil de Portimão | Rua do Comércio | Portimão |
+| Nome | Morada | Cidade | Categoria BD |
+|---|---|---|---|
+| Conservatória do Registo Civil de Faro – Central | Avenida da República, 286 | Faro | Registos e Nacionalidade |
+| Conservatória do Registo Civil de Portimão | Rua do Comércio | Portimão | Registos e Nacionalidade |
+
+### 🏛️ Finanças (AT — Autoridade Tributária)
+
+#### 🟦 NORTE
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Finanças Braga | Praça Conde de Agrolongo, 4700-223 Braga | Braga | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Porto | Rua de Cândido dos Reis, 55, 4050-151 Porto | Porto | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Vila Nova de Gaia | Rua Almeida Garrett, 4400-208 Vila Nova de Gaia | Vila Nova de Gaia | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Viana do Castelo | Praça D. Afonso III, 4900-351 Viana do Castelo | Viana do Castelo | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Guimarães | Rua de Santo António, 4810-208 Guimarães | Guimarães | https://www.portaldasfinancas.gov.pt | Finanças |
+
+#### 🟩 CENTRO
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Finanças Coimbra | Avenida Fernão de Magalhães, 3030-144 Coimbra | Coimbra | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Leiria | Rua da Junqueira, 2410-328 Leiria | Leiria | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Aveiro | Rua Dr. Mário Sacramento, 3810-192 Aveiro | Aveiro | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Viseu | Rua Paio Galvão, 3520-300 Viseu | Viseu | https://www.portaldasfinancas.gov.pt | Finanças |
+
+#### 🟨 LISBOA E VALE DO TEJO
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Finanças Lisboa – Praça de Espanha | Av. das Forças Armadas, 1500-264 Lisboa | Lisboa | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Lisboa – Campo Grande | Av. do Brasil, 53, 1700-089 Lisboa | Lisboa | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Amadora | Av. Doutor Miguel Bombarda, 2700-289 Amadora | Amadora | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Sintra | Largo Luís de Camões, 2710-129 Sintra | Sintra | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Almada | Praça da República, 2800-087 Almada | Almada | https://www.portaldasfinancas.gov.pt | Finanças |
+
+#### 🟥 ALENTEJO
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Finanças Évora | Rua Cândido dos Reis, 7000-099 Évora | Évora | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Beja | Rua de D. Afonso III, 7800-217 Beja | Beja | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Portalegre | Rua de Santo António, 7300-533 Portalegre | Portalegre | https://www.portaldasfinancas.gov.pt | Finanças |
+
+#### 🟦 ALGARVE
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Finanças Faro | Praça da Liberdade, 8000-266 Faro | Faro | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Portimão | Rua 16 de Junho, 8500-556 Portimão | Portimão | https://www.portaldasfinancas.gov.pt | Finanças |
+| Finanças Loulé | Avenida José da Costa Mealha, 8100-410 Loulé | Loulé | https://www.portaldasfinancas.gov.pt | Finanças |
+
+### 🧾 Segurança Social
+
+#### 🟦 NORTE
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Segurança Social Braga | Largo São Francisco, 4700-444 Braga | Braga | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Porto – Central | Rua de Entre Quintas, 4050-213 Porto | Porto | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Vila Nova de Gaia | Avenida da República, 4430-190 Vila Nova de Gaia | Vila Nova de Gaia | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Guimarães | Rua da Rainha D. Maria II, 4810-227 Guimarães | Guimarães | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Viana do Castelo | Rua da Junqueira, 4900-035 Viana do Castelo | Viana do Castelo | https://www.seg-social.pt | Segurança Social |
+
+#### 🟩 CENTRO
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Segurança Social Coimbra | Praça 8 de Maio, 3000-300 Coimbra | Coimbra | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Aveiro | Rua de São João, 3800-256 Aveiro | Aveiro | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Leiria | Rua Manuel da Silva Cruz, 2410-138 Leiria | Leiria | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Viseu | Rua Dr. Alves da Veiga, 3500-713 Viseu | Viseu | https://www.seg-social.pt | Segurança Social |
+
+#### 🟨 LISBOA E VALE DO TEJO
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Segurança Social Lisboa – Alvalade | Avenida de Roma, 1000-256 Lisboa | Lisboa | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Amadora | Avenida Padre Cruz, 2700-559 Amadora | Amadora | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Sintra | Rua Bernardino Machado, 2710-443 Sintra | Sintra | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Almada | Rua da Constituição, 2800-068 Almada | Almada | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Cascais | Avenida 25 de Abril, 2750-800 Cascais | Cascais | https://www.seg-social.pt | Segurança Social |
+
+#### 🟥 ALENTEJO
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Segurança Social Évora | Rua de São João Evangelista, 7000-678 Évora | Évora | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Beja | Rua Fernando Caldeira, 7800-118 Beja | Beja | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Portalegre | Rua Luís de Camões, 7300-533 Portalegre | Portalegre | https://www.seg-social.pt | Segurança Social |
+
+#### 🟦 ALGARVE
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Segurança Social Faro – Central | Avenida da República, 8000-078 Faro | Faro | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Portimão | Rua do Quartel, 8500-505 Portimão | Portimão | https://www.seg-social.pt | Segurança Social |
+| Segurança Social Loulé | Rua Padre Fernando Ferrão, 8100-282 Loulé | Loulé | https://www.seg-social.pt | Segurança Social |
 
 ### 🟢 Lojas do Cidadão (Atendimento Integrado)
 
 #### 🟨 LISBOA E VALE DO TEJO
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Loja do Cidadão de Lisboa – Picoas | Av. Fontes Pereira de Melo, 34 B | Lisboa | https://www.portaldocidadao.pt |
-| Loja do Cidadão de Almada | Av. Dom João II, nº 18 | Almada | https://www.portaldocidadao.pt |
-| Loja do Cidadão de Sintra | Rua Dr. Alfredo da Costa, nº 2 | Sintra | https://www.portaldocidadao.pt |
-| Loja do Cidadão de Cascais | Largo da República, nº 1 | Cascais | https://www.portaldocidadao.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Loja do Cidadão de Lisboa – Picoas | Av. Fontes Pereira de Melo, 34 B | Lisboa | https://www.portaldocidadao.pt | Residência e Legalização |
+| Loja do Cidadão de Almada | Av. Dom João II, nº 18 | Almada | https://www.portaldocidadao.pt | Residência e Legalização |
+| Loja do Cidadão de Sintra | Rua Dr. Alfredo da Costa, nº 2 | Sintra | https://www.portaldocidadao.pt | Residência e Legalização |
+| Loja do Cidadão de Cascais | Largo da República, nº 1 | Cascais | https://www.portaldocidadao.pt | Residência e Legalização |
 
 #### 🟦 NORTE
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Loja do Cidadão do Porto – Aliados | Avenida dos Aliados, 11 | Porto | https://www.portaldocidadao.pt |
-| Loja do Cidadão de Braga | Largo São João do Souto | Braga | https://www.portaldocidadao.pt |
-| Loja do Cidadão de Guimarães | Rua D. João I | Guimarães | https://www.portaldocidadao.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Loja do Cidadão do Porto – Aliados | Avenida dos Aliados, 11 | Porto | https://www.portaldocidadao.pt | Residência e Legalização |
+| Loja do Cidadão de Braga | Largo São João do Souto | Braga | https://www.portaldocidadao.pt | Residência e Legalização |
+| Loja do Cidadão de Guimarães | Rua D. João I | Guimarães | https://www.portaldocidadao.pt | Residência e Legalização |
 
 #### 🟩 CENTRO
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Loja do Cidadão de Coimbra | Rua do Brasil, nº 55 | Coimbra | https://www.portaldocidadao.pt |
-| Loja do Cidadão de Aveiro | Largo da Praça do Peixe | Aveiro | https://www.portaldocidadao.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Loja do Cidadão de Coimbra | Rua do Brasil, nº 55 | Coimbra | https://www.portaldocidadao.pt | Residência e Legalização |
+| Loja do Cidadão de Aveiro | Largo da Praça do Peixe | Aveiro | https://www.portaldocidadao.pt | Residência e Legalização |
 
 #### 🟥 ALENTEJO
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Loja do Cidadão de Évora | Rua da República | Évora | https://www.portaldocidadao.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Loja do Cidadão de Évora | Rua da República | Évora | https://www.portaldocidadao.pt | Residência e Legalização |
 
 #### 🟧 ALGARVE
-| Nome | Morada | Cidade | Website |
-|---|---|---|---|
-| Loja do Cidadão de Faro – Centro | Avenida da República, nº 286 | Faro | https://www.portaldocidadao.pt |
+| Nome | Morada | Cidade | Website | Categoria BD |
+|---|---|---|---|---|
+| Loja do Cidadão de Faro – Centro | Avenida da República, nº 286 | Faro | https://www.portaldocidadao.pt | Residência e Legalização |
 
 ---
 
@@ -624,43 +709,45 @@ const isAuthor = post.authorId === user.id || post.authorName === user.name;
 16. **ss_dec_desemprego**: Declaração Desemprego (RP 5044)
     - Campos Extra: company_name (Empresa).
 
-17. **ss_abono_familia**: Abono de Família / RSI
+17. O **botão de Reset de Sistema** deve existir **APENAS no Admin Hub**. Removê-lo de todos os outros locais (Login e Header Geral).
+18. **Credenciais Oficiais**: Nunca esquecer ou remover os acessos da Amanda.
+19. **ss_abono_familia**: Abono de Família / RSI
     - Campos Extra: num_agregado (N.º Membros - number).
 
-18. **ss_dec_situacao_economica**: Isenção de Taxas / Apoios
+20. **ss_dec_situacao_economica**: Isenção de Taxas / Apoios
 
-19. **ss_niss**: Atribuição de NISS
+21. **ss_niss**: Atribuição de NISS
 
-20. **sns_inscricao**: N.º de Utente SNS
+22. **sns_inscricao**: N.º de Utente SNS
 
-21. **sns_alteracao_dados**: Atualização SNS
+23. **sns_alteracao_dados**: Atualização SNS
     - Campos Extra: phone (Novo Telefone).
 
-22. **sns_reembolso_despesas**: Reembolso Saúde
+24. **sns_reembolso_despesas**: Reembolso Saúde
     - Campos Extra: invoice (N.º Fatura).
 
-23. **nif_req**: Atribuição de NIF
+25. **nif_req**: Atribuição de NIF
 
-24. **at_rep_fiscal**: Representante Fiscal AT
+26. **at_rep_fiscal**: Representante Fiscal AT
     - Campos Extra: rep_nif (NIF Representante).
 
-25. **at_alteracao_morada**: Morada Fiscal Online
+27. **at_alteracao_morada**: Morada Fiscal Online
     - Campos Extra: new_addr (Morada Nova).
 
-26. **dges_reconhecimento**: Reconhecimento Superior (DGES)
+28. **dges_reconhecimento**: Reconhecimento Superior (DGES)
     - Campos Extra: course (Curso).
 
-27. **dge_secundario_equivalencia**: Equivalência Secundário (12º ano)
+29. **dge_secundario_equivalencia**: Equivalência Secundário (12º ano)
 
-28. **denuncia_discriminacao**: Denúncia CICDR
+30. **denuncia_discriminacao**: Denúncia CICDR
     - Campos Extra: incident_date (Data - date).
 
-29. **dec_violencia_domestica**: Vítima VD (PSP/GNR)
+31. **dec_violencia_domestica**: Vítima VD (PSP/GNR)
 
-30. **apoio_arrendamento**: Apoio IHRU (Porta Entrada)
+32. **apoio_arrendamento**: Apoio IHRU (Porta Entrada)
     - Campos Extra: rent (Valor Renda € - number).
 
-31. **junta_morada**: Atestado Junta Freguesia
+33. **junta_morada**: Atestado Junta Freguesia
 
 ### 📖 GUIAS DE SERVIÇO (8 items)
 
@@ -675,5 +762,20 @@ const isAuthor = post.authorId === user.id || post.authorName === user.name;
 
 ---
 
-*Última atualização: 2026-02-28*
-*Este ficheiro é gerido pela proprietária Amanda Silva Abreu e pelo agente de desenvolvimento.*
+*Última atualização: 2026-03-01*
+
+## 🔐 ACESSOS E CREDENCIAIS OFICIAIS
+
+> [!IMPORTANT]
+> Estes são os acessos permanentes da proprietária. NUNCA esquecer.
+
+**Utilizador Comum:**
+- **Email**: `amandajhonnes@yahoo.com.br`
+- **Senha**: `Britney`
+
+**Admin Hub (Acesso Total):**
+- **Email**: `amandasabreu89@gmail.com`
+- **Senha**: `Britney`
+
+---
+*Manual de Proteção gerido pelo Agente Antigravity conforme ordens da Proprietária.*

@@ -12,6 +12,7 @@ import { autoTranslateText, generateSpeech } from '../services/geminiService';
 import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
 import { communityService } from '../services/communityService';
+import { useToast } from './Toast';
 
 // Audio & Translation Helpers
 const translationCache: Record<string, string> = {};
@@ -26,10 +27,12 @@ function decodeBase64(base64: string) {
   return bytes;
 }
 
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext, sampleRate: number, numChannels: number): Promise<AudioBuffer> {
+async function decodeAudioData(data: Uint8Array, ctx: AudioContext, numChannels: number): Promise<AudioBuffer> {
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
+  // Use the context's current sample rate if possible, or try to detect from metadata if we had any
+  // Gemini usually returns 24000
+  const buffer = ctx.createBuffer(numChannels, frameCount, ctx.sampleRate);
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
     for (let i = 0; i < frameCount; i++) {
@@ -86,7 +89,6 @@ const VoicePlayButton: React.FC<{ text: string, language: string }> = ({ text, l
     setIsLoading(true);
 
     try {
-      // Usar texto original por enquanto, ou se for rápido traduzir e depois gerar voz
       const cacheKey = `${text}_${language}`;
       let textToRead = translationCache[cacheKey] || text;
 
@@ -96,13 +98,13 @@ const VoicePlayButton: React.FC<{ text: string, language: string }> = ({ text, l
       if (!audioData) return;
 
       if (!currentAudioContext) {
-        currentAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+        currentAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
       if (currentAudioContext.state === 'suspended') await currentAudioContext.resume();
 
       setIsPlaying(true);
       const decodedData = decodeBase64(audioData);
-      const buffer = await decodeAudioData(decodedData, currentAudioContext, 24000, 1);
+      const buffer = await decodeAudioData(decodedData, currentAudioContext, 1);
       const source = currentAudioContext.createBufferSource();
       source.buffer = buffer;
       source.connect(currentAudioContext.destination);
@@ -188,9 +190,11 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [reportingItem, setReportingItem] = useState<{ postId: string, commentId?: string } | null>(null);
   const [reportForm, setReportForm] = useState({ name: user.name || '', email: user.email || '', reason: '' });
+  const { showToast } = useToast();
 
   const [activeStory, setActiveStory] = useState<Post | null>(null);
   const [openPostMenu, setOpenPostMenu] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const topStories = useMemo(() => {
     return [...masterPosts].sort((a, b) => {
@@ -289,11 +293,16 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     }));
 
     if (commentId) {
+      const isActuallyLiked = likedComments.has(commentId);
       setLikedComments(prev => {
         const next = new Set(prev);
-        if (isLiked) next.delete(commentId); else next.add(commentId);
+        if (isActuallyLiked) next.delete(commentId); else next.add(commentId);
         return next;
       });
+      // background Sync
+      try {
+        await communityService.toggleCommentLike(commentId, user.id);
+      } catch (e) { }
     } else {
       setLikedPosts(prev => {
         const next = new Set(prev);
@@ -308,7 +317,6 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!window.confirm("Certeza que queres eliminar este post? Esta ação não pode ser desfeita.")) return;
     setMasterPosts(prev => prev.filter(p => p.id !== postId));
     try {
       await communityService.deletePost(postId, user.id);
@@ -342,7 +350,17 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     analytics.track('comment_created', user.id);
 
     try {
-      await communityService.createComment(backupPostId, user.id, finalContent);
+      const dbComment = await communityService.createComment(backupPostId, user.id, finalContent);
+      if (dbComment) {
+        // Update temp comment with real DB data
+        setMasterPosts(prev => prev.map(p => {
+          if (p.id !== backupPostId) return p;
+          return {
+            ...p,
+            comments: p.comments.map(c => c.id === comment.id ? { ...c, id: dbComment.id } : c)
+          };
+        }));
+      }
     } catch (error) { }
   };
 
@@ -380,21 +398,34 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     } catch (e) { }
   };
 
-  const handleReportSubmit = () => {
+  const handleReportSubmit = async () => {
     if (!reportForm.reason.trim() || !reportForm.name || !reportForm.email) {
-      alert("Preencha todos os campos da denúncia.");
+      showToast("Preencha todos os campos da denúncia.", "warning");
       return;
     }
-    alert(`Denúncia enviada com sucesso para análise pela equipa MIRA.`);
-    if (reportingItem) {
-      setMasterPosts(prev => prev.map(p => {
-        if (p.id !== reportingItem.postId) return p;
-        if (!reportingItem.commentId) return { ...p, reports: p.reports + 1 };
-        return p;
-      }));
+
+    try {
+      await communityService.reportContent({
+        postId: reportingItem?.postId,
+        commentId: reportingItem?.commentId,
+        userId: user.id,
+        reason: reportForm.reason,
+        email: reportForm.email
+      });
+
+      if (reportingItem) {
+        setMasterPosts(prev => prev.map(p => {
+          if (p.id !== reportingItem.postId) return p;
+          if (!reportingItem.commentId) return { ...p, reports: (p.reports || 0) + 1 };
+          return p;
+        }));
+      }
+      setReportingItem(null);
+      setReportForm({ name: user.name || '', email: user.email || '', reason: '' });
+      showToast("Denúncia enviada com sucesso para análise.", "success");
+    } catch (e) {
+      showToast("Erro ao enviar denúncia. Tenta novamente.", "error");
     }
-    setReportingItem(null);
-    setReportForm({ name: user.name || '', email: user.email || '', reason: '' });
   };
 
   const openMemberProfile = (authorId: string, authorName: string, authorAvatar: string) => {
@@ -603,7 +634,7 @@ const CommunityView: React.FC<CommunityViewProps> = ({
                           <div className="px-5 pt-4 pb-2"><span className="text-[8px] font-black text-mira-orange uppercase tracking-widest">{t(getCategoryKey(post.category), language)}</span></div>
                           <div className="h-px bg-slate-50 mx-4 mb-1" />
                           {isAuthor ? (
-                            <button onClick={() => { setOpenPostMenu(null); handleDeletePost(post.id); }} className="w-full flex items-center gap-3 px-5 py-4 text-red-500 font-black text-xs uppercase tracking-wider hover:bg-red-50 transition-all text-left">
+                            <button onClick={() => { setOpenPostMenu(null); setConfirmDeleteId(post.id); }} className="w-full flex items-center gap-3 px-5 py-4 text-red-500 font-black text-xs uppercase tracking-wider hover:bg-red-50 transition-all text-left">
                               <Trash2 size={16} /> Excluir post
                             </button>
                           ) : (
@@ -870,6 +901,24 @@ const CommunityView: React.FC<CommunityViewProps> = ({
               <button onClick={handleAddComment} disabled={!newComment.trim()} className="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black uppercase text-[11px] tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-30">
                 <Send size={20} /> Publicar {commentingOn.replyToName ? 'Resposta' : 'Comentário'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* CONFIRM DELETE MODAL */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[800] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3rem] p-10 shadow-2xl relative flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center">
+              <Trash2 size={40} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Eliminar Publicação?</h3>
+              <p className="text-xs text-slate-500 font-bold leading-relaxed">Esta ação é permanente e não poderá ser desfeita. Todos os comentários e votos serão perdidos.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 w-full pt-4">
+              <button onClick={() => setConfirmDeleteId(null)} className="py-4 bg-slate-50 text-slate-400 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-100 transition-all">Cancelar</button>
+              <button onClick={() => { handleDeletePost(confirmDeleteId); setConfirmDeleteId(null); }} className="py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-red-700 shadow-xl shadow-red-100 active:scale-95 transition-all">Eliminar</button>
             </div>
           </div>
         </div>

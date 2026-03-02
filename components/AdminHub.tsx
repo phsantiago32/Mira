@@ -4,7 +4,7 @@ import { User, Post, ViewType } from '../types';
 import {
     Users, ShieldAlert, MailX, Trash2, Ban, ShieldCheck,
     Search, Filter, ChevronRight, AlertCircle, CheckCircle2,
-    MoreVertical, UserMinus, ShieldOff, MessageSquare
+    MoreVertical, UserMinus, ShieldOff, MessageSquare, Sparkles
 } from 'lucide-react';
 import { COLORS } from '../constants';
 
@@ -91,12 +91,30 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                     <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Admin Hub</h2>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Painel de Controlo e Moderação</p>
                 </div>
-                <button
-                    onClick={onBack}
-                    className="p-3 bg-white rounded-2xl border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm transition-all"
-                >
-                    <ChevronRight className="rotate-180" size={20} />
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={onBack}
+                        className="p-3 bg-white rounded-2xl border border-slate-100 text-slate-400 hover:text-slate-900 shadow-sm transition-all"
+                    >
+                        <ChevronRight className="rotate-180" size={20} />
+                    </button>
+                    {/* Botão de Sair no Admin Hub */}
+                    <button
+                        onClick={() => window.dispatchEvent(new CustomEvent('mira_force_logout'))}
+                        className="p-3 bg-red-50 text-red-500 rounded-2xl border border-red-100 hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                        title="Sair do Painel"
+                    >
+                        <ShieldOff size={20} />
+                    </button>
+                    {/* Botão de Reset de Sistema EXCLUSIVO no Admin Hub */}
+                    <button
+                        onClick={() => { if (window.confirm("RESET TOTAL: Isso irá limpar todo o lixo do navegador e resolver problemas de login. Continuar?")) { localStorage.clear(); sessionStorage.clear(); window.location.reload(); } }}
+                        className="p-3 bg-orange-50 text-orange-500 rounded-2xl border border-orange-100 hover:bg-orange-500 hover:text-white transition-all shadow-sm"
+                        title="Reset de Sistema"
+                    >
+                        <Sparkles size={20} />
+                    </button>
+                </div>
             </div>
 
             {/* Stats Quick View */}

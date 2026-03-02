@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
-import { Globe, Lock, Eye, EyeOff, Mail, ArrowLeft, CheckCircle2, ChevronDown, ShieldCheck, Key, Users } from 'lucide-react';
+import { Shield, Lock, CheckCircle2, Mail, Key, Eye, EyeOff, AlertCircle, Info, Sparkles, Globe, ChevronDown, ArrowLeft, Users } from 'lucide-react';
 import { t } from '../utils/translations';
 import { MIRA_LOGO } from '../constants';
+import { authService } from '../services/authService';
 
 interface AuthScreenProps {
     onLogin: (user: User) => void;
@@ -30,69 +31,66 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
         setErrorMsg('');
         setIsLoading(true);
 
-        if (isForgotPassword) {
-            // Placeholder: Aqui implementaremos o 'Reset Password' real
-            setIsForgotPassword(false);
-            setIsLoading(false);
-            return;
-        }
-
-        let authData: any = null;
-        let authError: any = null;
-
-        if (isLogin) {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email.trim(),
-                password: password
-            });
-            authData = data;
-            authError = error;
-        } else {
-            // Check denylist before signup
-            const { data: isDenied } = await supabase
-                .from('denied_emails')
-                .select('email')
-                .eq('email', email.trim())
-                .single();
-
-            if (isDenied) {
-                setErrorMsg('Este email foi bloqueado por violar os termos da comunidade.');
+        try {
+            if (isForgotPassword) {
+                // Placeholder: Aqui implementaremos o 'Reset Password' real
+                setIsForgotPassword(false);
                 setIsLoading(false);
                 return;
             }
 
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                email: email.trim(),
-                password: password,
-                options: {
-                    data: { name: `Usuário ${Math.floor(Math.random() * 1000)}` }
+            let authData: any = null;
+            let authError: any = null;
+
+            if (isLogin) {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email.trim(),
+                    password: password
+                });
+                authData = data;
+                authError = error;
+            } else {
+                // Check denylist before signup
+                const { data: isDenied } = await supabase
+                    .from('denied_emails')
+                    .select('email')
+                    .eq('email', email.trim())
+                    .single();
+
+                if (isDenied) {
+                    setErrorMsg('Este email foi bloqueado por violar os termos da comunidade.');
+                    setIsLoading(false);
+                    return;
                 }
-            });
-            authData = signUpData;
-            authError = signUpError;
 
-            if (!authError && !authData?.session) {
-                setErrorMsg('Conta criada! Faça login com a sua senha.');
-                setIsLogin(true);
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                    email: email.trim(),
+                    password: password,
+                    options: {
+                        data: { name: `Usuário ${Math.floor(Math.random() * 1000)} ` }
+                    }
+                });
+                authData = signUpData;
+                authError = signUpError;
+
+                if (!authError && !authData?.session) {
+                    setErrorMsg('Conta criada! Faça login com a sua senha.');
+                    setIsLogin(true);
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            if (authError) {
+                setErrorMsg(authError.message);
                 setIsLoading(false);
                 return;
             }
-        }
 
-        if (authError) {
-            setErrorMsg(authError.message);
-            setIsLoading(false);
-            return;
-        }
+            if (authData?.session) {
+                const profile = await authService.fetchProfileWithRetry(authData.session.user.id);
 
-        if (authData?.session) {
-            try {
-                const fetchProfile = supabase.from('profiles').select('*').eq('id', authData.session.user.id).single();
-                const timeout = new Promise<{ data: any, error: any }>((resolve) => setTimeout(() => resolve({ data: null, error: new Error('Timeout') }), 2000));
-
-                const { data: profile, error: profileErr } = await Promise.race([fetchProfile, timeout]);
-
-                if (profile && !profileErr) {
+                if (profile) {
                     if (profile.is_blocked) {
                         await supabase.auth.signOut();
                         setErrorMsg('A sua conta foi suspensa por um moderador.');
@@ -108,53 +106,26 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                             .then(() => console.log('Email sincronizado no perfil existente'));
                     }
 
-                    onLogin({
-                        id: profile.id,
-                        email: authData.session.user.email || '',
-                        name: profile.name || authData.session.user.user_metadata?.name || 'Usuário Novo',
-                        avatar: profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}`,
-                        bio: profile.bio || '',
-                        nationality: profile.nationality || 'Não especificada',
-                        ageRange: profile.age_range || '',
-                        location: profile.location || '',
-                        mainChallenge: profile.main_challenge || '',
-                        reputation: profile.reputation || 0,
-                        trustLevel: profile.trust_level || 'Observador',
-                        isVerified: profile.is_verified || false,
-                        role: profile.role || 'member',
-                        isMuted: profile.is_muted || false,
-                        registrationDate: profile.updated_at || new Date().toISOString()
-                    });
+                    const loggedUser = authService.mapProfileToUser(profile, authData.session.user);
+                    console.log('MIRA: User logged in, calling onLogin...', loggedUser.name);
+                    onLogin(loggedUser);
                 } else {
-                    const emailStr = authData.session.user.email || '';
-                    const isAdmin = emailStr.includes('amandasabreu');
-                    const defaultName = isAdmin ? 'Amanda Admin' : (authData.session.user.user_metadata?.name || 'Usuário Comunidade');
-
-                    supabase.from('profiles').insert([{
-                        id: authData.session.user.id,
-                        name: defaultName,
-                        email: emailStr,
-                        role: isAdmin ? 'admin' : 'member'
-                    }]).then(() => console.log('Criou profile fallback'));
-
-                    onLogin({
-                        id: authData.session.user.id,
-                        email: emailStr,
-                        name: defaultName,
-                        role: isAdmin ? 'admin' : 'member',
-                        reputation: 500,
-                        trustLevel: 'Curador Comunitário',
-                        isVerified: true,
-                        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(isAdmin ? 'Admin' : 'User')}`,
-                        bio: '', nationality: '', ageRange: '', location: '', mainChallenge: '', isMuted: false, registrationDate: new Date().toISOString()
-                    });
+                    console.log('MIRA: No profile found, creating fallback...');
+                    const fallbackUser = await authService.createFallbackProfile(
+                        authData.session.user.id,
+                        authData.session.user.email || '',
+                        authData.session.user.user_metadata?.name
+                    );
+                    console.log('MIRA: Fallback created, calling onLogin...', fallbackUser.name);
+                    onLogin(fallbackUser);
                 }
-            } catch (err: any) {
-                console.error('Profile fetch error:', err);
-                setErrorMsg('Erro interno no servidor ou no perfil.');
             }
+        } catch (err: any) {
+            console.error('MIRA Auth Critical Error:', err);
+            setErrorMsg('Erro de ligação ao servidor. Tente novamente.');
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     const renderForm = () => {
@@ -203,10 +174,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                             <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-blue transition-colors" size={20} />
                             <input
                                 type="email"
-                                placeholder="oseuemail@exemplo.com"
+                                placeholder={t('auth_email_placeholder', language)}
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
-                                className="w-full pl-14 pr-4 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:border-mira-blue focus:bg-white transition-all outline-none shadow-sm"
+                                className="w-full pl-14 pr-4 py-5 bg-white/10 border-2 border-white/10 rounded-[1.5rem] text-sm font-bold text-white placeholder:text-white/40 focus:border-mira-blue focus:bg-white/20 transition-all outline-none shadow-sm backdrop-blur-md"
                             />
                         </div>
                     </div>
@@ -216,10 +187,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-orange transition-colors" size={20} />
                             <input
                                 type={showPass ? "text" : "password"}
-                                placeholder={t('auth_password_placeholder', language)}
+                                placeholder={t('auth_pass_placeholder', language)}
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
-                                className="w-full pl-14 pr-12 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:border-mira-orange focus:bg-white transition-all outline-none shadow-sm"
+                                className="w-full pl-14 pr-12 py-5 bg-white/10 border-2 border-white/10 rounded-[1.5rem] text-sm font-bold text-white placeholder:text-white/40 focus:border-mira-orange focus:bg-white/20 transition-all outline-none shadow-sm backdrop-blur-md"
                             />
                             <button
                                 type="button"
@@ -231,8 +202,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                         </div>
                         {isLogin && (
                             <div className="flex justify-end pt-2">
-                                <button type="button" onClick={() => setIsForgotPassword(true)} className="text-[10px] font-black uppercase tracking-widest text-[#00E5FF] hover:text-white transition-colors">
-                                    Esqueceu a senha?
+                                <button type="button" onClick={() => setIsForgotPassword(true)} className="text-[10px] font-black uppercase tracking-widest text-mira-orange hover:text-white transition-colors">
+                                    {t('auth_forgot_pass', language)}
                                 </button>
                             </div>
                         )}
@@ -256,25 +227,32 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
         <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#0A162B] via-[#003B75] to-[#0A162B] relative overflow-hidden font-['Plus_Jakarta_Sans']">
             <style>
                 {`
-            @keyframes modern-pulse {
-              0%, 100% { opacity: 0.3; transform: scale(1); filter: blur(0px); }
-              50% { opacity: 1; transform: scale(1.3); filter: blur(1px); }
-            }
-            @keyframes glow-line {
-              0%, 100% { filter: brightness(1) drop-shadow(0 0 2px rgba(255,255,255,0.5)); }
-              50% { filter: brightness(1.5) drop-shadow(0 0 10px rgba(249,115,22,1)); }
-            }
-            .dot-flash-1 { animation: modern-pulse 2s infinite ease-in-out; }
-            .dot-flash-2 { animation: modern-pulse 2s infinite ease-in-out 0.5s; }
-            .dot-flash-3 { animation: modern-pulse 2s infinite ease-in-out 1s; }
-            .dot-flash-4 { animation: modern-pulse 2s infinite ease-in-out 1.5s; }
-            .glow-line-animated { animation: glow-line 3s infinite ease-in-out; }
-          `}
+@keyframes flash-mira {
+    0%, 100% { opacity: 0.3; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); filter: brightness(1.2); }
+}
+@keyframes glow-line {
+    0%, 100% { filter: brightness(1) drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)); }
+    50% { filter: brightness(1.5) drop-shadow(0 0 10px rgba(249, 115, 22, 1)); }
+}
+@keyframes float-orb {
+    0%, 100% { transform: translate(0, 0); }
+    33% { transform: translate(30px, -50px); }
+    66% { transform: translate(-20px, 20px); }
+}
+.dot-flash-1 { animation: flash-mira 2s infinite ease-in-out; }
+.dot-flash-2 { animation: flash-mira 2s infinite ease-in-out 0.4s; }
+.dot-flash-3 { animation: flash-mira 2s infinite ease-in-out 0.8s; }
+.dot-flash-4 { animation: flash-mira 2s infinite ease-in-out 1.2s; }
+.glow-line-animated { animation: glow-line 3s infinite ease-in-out; }
+.orb-animation { animation: float-orb 15s infinite ease-in-out; }
+`}
             </style>
 
             <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-mira-blue-light/15 rounded-full blur-[150px]"></div>
-                <div className="absolute bottom-[-10%] left-[-20%] w-[600px] h-[600px] bg-mira-blue/20 rounded-full blur-[200px]"></div>
+                <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-mira-orange/20 rounded-full blur-[120px] orb-animation"></div>
+                <div className="absolute top-[20%] left-[-10%] w-[400px] h-[400px] bg-mira-blue-light/10 rounded-full blur-[100px] orb-animation" style={{ animationDelay: '-5s' }}></div>
+                <div className="absolute bottom-[-15%] middle w-[700px] h-[700px] bg-mira-blue/20 rounded-full blur-[150px] orb-animation" style={{ animationDelay: '-10s' }}></div>
             </div>
 
             {/* Language Selector Dropdown - Moved to far Right and distanced from logo */}
@@ -282,9 +260,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                 <div className="relative">
                     <button
                         onClick={() => setShowLangMenu(!showLangMenu)}
-                        className="bg-white/10 backdrop-blur-3xl border border-white/10 px-5 py-2.5 rounded-2xl text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-3 shadow-[0_10px_30px_rgba(0,229,255,0.05)] hover:bg-white/20 transition-all"
+                        className="bg-mira-orange text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all border border-white/20"
                     >
-                        <Globe size={16} className="text-mira-orange" /> {language} <ChevronDown size={14} className={`transition-transform ${showLangMenu ? 'rotate-180' : ''}`} />
+                        <div className="bg-white/20 p-1 rounded-lg">
+                            <Globe size={16} />
+                        </div>
+                        {language}
+                        <ChevronDown size={14} className={`transition-transform duration-300 ${showLangMenu ? 'rotate-180' : ''}`} />
                     </button>
                     {showLangMenu && (
                         <div className="absolute top-full right-0 mt-3 w-40 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 animate-in slide-in-from-top-2">
@@ -292,7 +274,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                                 <button
                                     key={l}
                                     onClick={() => { setLanguage(l); setShowLangMenu(false); }}
-                                    className={`w-full text-left px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${language === l ? 'bg-mira-blue-light text-mira-blue-dark shadow-lg shadow-cyan-500/30' : 'text-slate-600 hover:bg-mira-blue-pastel hover:text-mira-blue-dark'}`}
+                                    className={`w-full text-left px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${language === l ? 'bg-mira-orange text-white shadow-lg shadow-orange-500/30' : 'text-slate-600 hover:bg-mira-orange/10 hover:text-mira-orange'}`}
                                 >
                                     {l === 'PT' ? 'Português' : l === 'EN' ? 'English' : l === 'ES' ? 'Español' : 'Français'}
                                 </button>
@@ -312,10 +294,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                         </div>
                     </div>
                     <h1 className="text-5xl font-black text-white tracking-tighter drop-shadow-md leading-none">MIRA</h1>
-                    <p className="text-white/90 text-[9px] font-bold mt-4 max-w-[280px] mx-auto leading-relaxed uppercase tracking-[0.2em]">Empoderando vozes. Unindo vidas</p>
+                    <p className="text-white/90 text-[9px] font-bold mt-4 max-w-[280px] mx-auto leading-relaxed uppercase tracking-[0.2em]">{t('auth_slogan', language)}</p>
                 </div>
 
-                <div className="bg-white/95 backdrop-blur-3xl w-full p-10 rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden border border-white/20">
+                <div className="bg-white/5 backdrop-blur-[60px] w-full p-10 rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden border border-white/10">
                     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-mira-orange via-mira-blue-light to-mira-blue glow-line-animated"></div>
                     <form onSubmit={handleAuth}>
                         {renderForm()}
@@ -324,24 +306,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
 
                 {/* Link de Registro Separado */}
                 {!isForgotPassword && (
-                    <div className="text-center mt-10 mb-16 animate-in fade-in duration-1000">
+                    <div className="text-center mt-10 mb-8 animate-in fade-in duration-1000">
                         <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[10px] font-black text-white/80 hover:text-white transition-colors uppercase tracking-[0.2em] drop-shadow-sm">
                             {isLogin ? 'Ainda não tens conta?' : 'Já fazes parte da rede?'} <span className="text-white underline decoration-white/40 underline-offset-8 decoration-2">{isLogin ? 'Regista-te aqui' : 'Entra aqui'}</span>
                         </button>
                     </div>
                 )}
+
+                {/* MIRA Lights moved here */}
+                <div className="flex items-center gap-2.5 justify-center mb-10">
+                    <div className="w-2 h-2 rounded-full bg-mira-orange dot-flash-1 shadow-[0_0_10px_rgba(249,115,22,0.8)]"></div>
+                    <div className="w-2 h-2 rounded-full bg-mira-blue-light dot-flash-2 shadow-[0_0_10px_rgba(0,229,255,0.8)]"></div>
+                    <div className="w-2 h-2 rounded-full bg-mira-blue dot-flash-3 shadow-[0_0_10px_rgba(0,123,255,0.8)]"></div>
+                    <div className="w-2 h-2 rounded-full bg-mira-orange-pastel dot-flash-4 shadow-[0_0_10px_rgba(249,115,22,0.5)]"></div>
+                </div>
             </div>
 
-            {/* High-Tech Blinking Lights & Attribution Footer */}
-            <div className="absolute bottom-6 w-full flex flex-col items-center gap-4 px-6">
-                <div className="flex gap-3 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-mira-orange dot-flash-1 shadow-[0_0_10px_#f97316]"></div>
-                    <div className="w-2 h-2 rounded-full bg-mira-blue dot-flash-2 shadow-[0_0_10px_#0ea5e9]"></div>
-                    <div className="w-2 h-2 rounded-full bg-mira-yellow dot-flash-3 shadow-[0_0_10px_#eab308]"></div>
-                    <div className="w-2 h-2 rounded-full bg-mira-green dot-flash-4 shadow-[0_0_10px_#22c55e]"></div>
-                </div>
-                <p className="text-[8px] font-black text-white/60 uppercase tracking-[0.3em] drop-shadow-sm">MIRA - COPYWRITE 2026, Amanda Silva Abreu.</p>
-            </div>
+            <p className="text-[7px] font-black text-white/20 uppercase tracking-[0.5em]">MIRA © 2026 AMANDA SILVA ABREU</p>
         </div>
     );
 };

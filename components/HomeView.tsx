@@ -128,6 +128,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
               <button onClick={() => setShowNotifSettings(true)} className="p-3 bg-white rounded-2xl shadow-xl border border-slate-50 text-mira-orange active:scale-90 transition-all">
                 <BellRing size={22} strokeWidth={2.5} />
               </button>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 p-3 bg-red-50 text-red-500 rounded-2xl border border-red-100 active:scale-90 transition-all shadow-sm group"
+                title="Sair"
+              >
+                <LogOut size={22} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
         </div>

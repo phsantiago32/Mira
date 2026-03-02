@@ -46,9 +46,14 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
     const [categoryFilter, setCategoryFilter] = useState<string>('Todos');
     const [entityFilter, setEntityFilter] = useState<string>('Todos');
 
-    const entities = useMemo(() => {
-        const all = [...templates, ...serviceGuides].map(t => t.authority);
-        return Array.from(new Set(all));
+    const availableEntities = useMemo(() => {
+        const all = templates.map(t => t.authority);
+        return Array.from(new Set(all)).filter(Boolean).sort();
+    }, []);
+
+    const availableCategories = useMemo(() => {
+        const all = templates.map(t => t.category);
+        return Array.from(new Set(all)).filter(Boolean).sort();
     }, []);
 
     const filteredItems = useMemo(() => {
@@ -163,7 +168,7 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                                             className="w-full pl-4 pr-10 py-3 bg-slate-100 border-none rounded-xl text-[10px] font-black uppercase tracking-widest appearance-none outline-none focus:ring-2 focus:ring-mira-orange-pastel"
                                         >
                                             <option value="Todos">Todas as Entidades</option>
-                                            {entities.map(e => <option key={e} value={e}>{e}</option>)}
+                                            {availableEntities.map(e => <option key={e} value={e}>{e}</option>)}
                                         </select>
                                         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>
@@ -174,7 +179,7 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                                             className="w-full pl-4 pr-10 py-3 bg-slate-100 border-none rounded-xl text-[10px] font-black uppercase tracking-widest appearance-none outline-none focus:ring-2 focus:ring-mira-orange-pastel"
                                         >
                                             <option value="Todos">Categorias</option>
-                                            {UNIFIED_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
                                         </select>
                                         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>

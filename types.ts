@@ -202,6 +202,7 @@ export interface MapAlert {
   image?: string;
   phone?: string;
   email?: string;
+  website?: string;
   type?: string;
 }
 
