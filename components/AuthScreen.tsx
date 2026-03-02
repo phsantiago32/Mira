@@ -39,6 +39,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                 return;
             }
 
+            console.log("MIRA: Auth start - ", { isLogin, email: email.trim() });
+
             let authData: any = null;
             let authError: any = null;
 
@@ -50,30 +52,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                 authData = data;
                 authError = error;
             } else {
-                // Check denylist before signup
+                console.log("MIRA: Sign up process - checking deny list...");
                 const { data: isDenied } = await supabase
                     .from('denied_emails')
                     .select('email')
                     .eq('email', email.trim())
-                    .single();
+                    .maybeSingle();
 
                 if (isDenied) {
+                    console.log("MIRA: Denied email detected.");
                     setErrorMsg('Este email foi bloqueado por violar os termos da comunidade.');
                     setIsLoading(false);
                     return;
                 }
 
+                console.log("MIRA: Proceeding to Supabase signUp...");
                 const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
                     email: email.trim(),
                     password: password,
                     options: {
-                        data: { name: `Usuário ${Math.floor(Math.random() * 1000)} ` }
+                        data: { name: `Usuário ${Math.floor(Math.random() * 1000)}` }
                     }
                 });
                 authData = signUpData;
                 authError = signUpError;
 
                 if (!authError && !authData?.session) {
+                    console.log("MIRA: Account created, but login needed (maybe email confirmation).");
                     setErrorMsg('Conta criada! Faça login com a sua senha.');
                     setIsLogin(true);
                     setIsLoading(false);
@@ -82,7 +87,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
             }
 
             if (authError) {
-                setErrorMsg(authError.message);
+                console.error("MIRA Auth error:", authError);
+                setErrorMsg(authError.message === 'Invalid login credentials' ? 'Utilizador ou senha incorretos.' : authError.message);
                 setIsLoading(false);
                 return;
             }

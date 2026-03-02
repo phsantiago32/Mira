@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { JobPost, WORK_TOPICS, CATEGORIES } from '../types';
-import { Search, Briefcase, ExternalLink, MapPin, Building2, TrendingUp, ChevronDown, Filter, X, SlidersHorizontal, Map as MapIcon, Globe, FileText, RefreshCcw, AlertTriangle, Volume2 } from 'lucide-react';
+import { Search, Briefcase, ExternalLink, MapPin, Building2, TrendingUp, ChevronDown, Filter, X, SlidersHorizontal, Map as MapIcon, Globe, FileText, RefreshCcw, AlertTriangle, Volume2, AlertCircle } from 'lucide-react';
 import { analytics } from '../services/analyticsService';
 import { supabase } from '../lib/supabase';
 import { t } from '../utils/translations';
@@ -210,6 +210,12 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">{t('jobs_loading', language)}</p>
               <p className="text-xs font-bold text-slate-400">{t('jobs_loading_desc', language)}</p>
             </div>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 space-y-4">
+            <div className="p-4 bg-red-50 text-red-500 rounded-3xl"><AlertCircle size={32} /></div>
+            <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{error}</p>
+            <button onClick={() => fetchJobs()} className="px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest">Tentar Novamente</button>
           </div>
         ) : activeTab === 'jobs' ? (
           filteredJobs.length > 0 ? (

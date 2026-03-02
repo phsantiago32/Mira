@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Search, Filter, MapPin, Phone, Mail, Globe, Star, Building2, ChevronRight, Info, MessageSquare, Clock, Zap, RefreshCcw, AlertTriangle, Volume2 } from 'lucide-react';
+import { Search, Filter, MapPin, Phone, Mail, Globe, Star, Building2, ChevronRight, Info, MessageSquare, Clock, Zap, RefreshCcw, AlertTriangle, Volume2, AlertCircle } from 'lucide-react';
 import { MAP_CATEGORIES, MapAlert } from '../types';
 import { t } from '../utils/translations';
 import { audioService } from '../services/audioService';
@@ -171,6 +171,12 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                     <div className="flex flex-col items-center justify-center h-full space-y-4">
                         <div className="w-12 h-12 border-4 border-mira-orange border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Carregando directório...</p>
+                    </div>
+                ) : error ? (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                        <div className="p-4 bg-red-50 text-red-500 rounded-3xl"><AlertCircle size={32} /></div>
+                        <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{error}</p>
+                        <button onClick={() => fetchServices()} className="px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest">Tentar Novamente</button>
                     </div>
                 ) : filteredServices.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
