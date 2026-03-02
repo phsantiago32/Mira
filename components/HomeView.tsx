@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
+import { emailService } from '../services/emailService';
 
 interface HomeViewProps {
   user: UserType;
@@ -75,13 +76,11 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
 
       if (error) throw error;
 
-      const emailSubject = encodeURIComponent(`MIRA APP: ${suggestionData.subject || 'Sugestão'}`);
-      const emailBody = encodeURIComponent(`Usuário: ${user.name}\nEmail: ${user.email}\n\nSugestão:\n${suggestionData.message}`);
-      window.location.href = `mailto:mira.app@hotmail.com?subject=${emailSubject}&body=${emailBody}`;
+      await emailService.sendEmail('suggestion', suggestionData, user);
 
       setShowSuggestionModal(false);
       setSuggestionData({ subject: '', message: '' });
-      alert("Obrigado pela sua sugestão!");
+      alert("Enviado com sucesso! A abrir o seu email para confirmação final...");
     } catch (err) {
       console.error(err);
       alert("Erro ao registar sugestão.");

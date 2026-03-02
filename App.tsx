@@ -19,7 +19,7 @@ import { communityService } from './services/communityService';
 import { AdminHub } from './components/AdminHub';
 import { authService } from './services/authService';
 import { MIRA_LOGO } from './constants';
-import { Bell, X, Info, Bot, Globe, ChevronDown, LayoutDashboard, LogOut, Sparkles, MessageCircle, ArrowLeft, Users } from 'lucide-react';
+import { Bell, X, Info, Bot, Globe, ChevronDown, LayoutDashboard, LogOut, Sparkles, MessageCircle, ArrowLeft, Users, Volume2 } from 'lucide-react';
 import { t } from './utils/translations';
 import { ToastProvider } from './components/Toast';
 
@@ -104,33 +104,51 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Rehydrate user from localStorage FIRST to avoid flicker
+    const storedUser = localStorage.getItem('mira_user');
+    if (storedUser) {
+      try {
+        const u = JSON.parse(storedUser);
+        setUser(u);
+        console.log("MIRA: Rehydrated from localStorage", u.id);
+      } catch (e) { }
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("MIRA: Auth State Changed:", event);
       if (session) {
         const profile = await authService.fetchProfileWithRetry(session.user.id);
         let u: User;
         if (profile) {
           u = authService.mapProfileToUser(profile, session.user);
+          // Auto-sync email if missing
           if (!profile.email && session.user.email) {
-            supabase.from('profiles').update({ email: session.user.email }).eq('id', profile.id).then(() => console.log('Email synced'));
+            supabase.from('profiles').update({ email: session.user.email }).eq('id', profile.id).then();
           }
         } else {
           u = await authService.createFallbackProfile(session.user.id, session.user.email || '', session.user.user_metadata?.name);
         }
-        console.log('MIRA: Session detected, setting user...', u.id);
+
         setUser(u);
         localStorage.setItem('mira_user', JSON.stringify(u));
+
         if (u.role === 'admin') setCurrentView(ViewType.ADMIN_HUB);
         else {
           const consentGiven = localStorage.getItem('mira_consent_given');
           if (consentGiven !== 'true') setShowConsent(true);
         }
 
+        // Parallel Data Fetch (Community, Saved, etc.)
         supabase.from('saved_posts').select('post_id').eq('user_id', session.user.id).then(({ data }) => {
           if (data) setSavedPostsIds(new Set(data.map(d => d.post_id)));
         });
+
       } else {
-        setUser(null);
-        localStorage.removeItem('mira_user');
+        if (event === 'SIGNED_OUT') {
+          console.log("MIRA: User signed out, flushing local cache.");
+          localStorage.clear();
+          setUser(null);
+        }
       }
     });
 
@@ -261,23 +279,63 @@ const App: React.FC = () => {
 
             <div className="relative">
               <button
-                onClick={() => setShowLangMenu(!showLangMenu)}
-                className={`p-2.5 rounded-2xl flex items-center gap-3 transition-all shadow-lg ${isAdmin ? 'bg-slate-800 text-white' : 'bg-mira-orange text-white shadow-orange-500/20 hover:scale-105 active:scale-95'}`}
+                onClick={() => setShowLangMenu(true)}
+                className={`p-2.5 rounded-2xl flex items-center gap-3 transition-all shadow-lg ${isAdmin ? 'bg-slate-800 text-white shadow-xl' : 'bg-mira-orange text-white shadow-orange-500/30 hover:scale-110 active:scale-95'}`}
               >
                 <div className="p-1.5 bg-white/20 rounded-lg">
-                  <Globe size={18} />
+                  <Globe size={18} className="animate-pulse-slow" />
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest">{language}</span>
-                <ChevronDown size={14} className={`transition-transform duration-300 ${showLangMenu ? 'rotate-180' : ''}`} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{language}</span>
               </button>
-              {showLangMenu && (
-                <div className="absolute top-full right-0 mt-3 w-32 bg-white rounded-2xl shadow-2xl border p-2 z-[200]">
-                  {['PT', 'EN', 'ES', 'FR'].map(l => <button key={l} onClick={() => { setLanguage(l); setShowLangMenu(false); }} className={`w-full text-left px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${language === l ? 'bg-mira-orange text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{l}</button>)}
-                </div>
-              )}
             </div>
           </div>
         </header>
+
+        {/* Netflix-Style Language Modal */}
+        {showLangMenu && (
+          <div className="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+            <div className="w-full max-w-lg bg-white/5 border border-white/10 rounded-[3rem] p-10 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-mira-orange/20 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-mira-blue/20 rounded-full blur-[80px] -ml-32 -mb-32"></div>
+
+              <div className="relative z-10 space-y-8 text-center text-white">
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-black uppercase tracking-tighter">Escolha o seu Idioma</h2>
+                  <p className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em]">Written & Audio Experience</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { code: 'PT', label: 'Português', sub: 'Nativo', flag: '🇵🇹' },
+                    { code: 'EN', label: 'English', sub: 'Standard', flag: '🇬🇧' },
+                    { code: 'ES', label: 'Español', sub: 'Latino', flag: '🇪🇸' },
+                    { code: 'FR', label: 'Français', sub: 'Européen', flag: '🇫🇷' }
+                  ].map((l) => (
+                    <button
+                      key={l.code}
+                      onClick={() => { setLanguage(l.code); setShowLangMenu(false); }}
+                      className={`group p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-2 ${language === l.code ? 'bg-mira-orange border-mira-orange shadow-2xl scale-105' : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`}
+                    >
+                      <span className="text-3xl mb-1">{l.flag}</span>
+                      <span className="font-black text-xs uppercase tracking-widest">{l.label}</span>
+                      <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                        <Volume2 size={10} />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Audio ON</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowLangMenu(false)}
+                  className="mt-6 p-4 text-white/40 hover:text-white transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Area with Bottom/Side Navigation */}
         <div className="flex flex-1 overflow-hidden relative">

@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Search, Filter, MapPin, Phone, Mail, Globe, Star, Building2, ChevronRight, Info, MessageSquare, Clock, Zap, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { Search, Filter, MapPin, Phone, Mail, Globe, Star, Building2, ChevronRight, Info, MessageSquare, Clock, Zap, RefreshCcw, AlertTriangle, Volume2 } from 'lucide-react';
 import { MAP_CATEGORIES, MapAlert } from '../types';
 import { t } from '../utils/translations';
+import { audioService } from '../services/audioService';
 
 interface LocalServicesListProps {
     language: string;
@@ -20,6 +21,21 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
     const fetchServices = async (retries = 3) => {
         setLoading(true);
         setError(null);
+
+        // Resilience: Hydro-charge from local cache immediately
+        const cached = localStorage.getItem('mira_services_cache');
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setServices(parsed);
+                    setFilteredServices(parsed);
+                    setLoading(false); // Can show cached data early
+                    console.log("MIRA: Rehydrated Services from localStorage");
+                }
+            } catch (e) { }
+        }
+
         try {
             const { data, error } = await supabase
                 .from('map_alerts')
@@ -62,6 +78,7 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                 });
                 setServices(mappedData);
                 setFilteredServices(mappedData);
+                localStorage.setItem('mira_services_cache', JSON.stringify(mappedData));
             } else {
                 setServices([]);
                 if (retries > 0) {
@@ -167,6 +184,15 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                         <Star size={12} fill="currentColor" />
                                         <span>{service.avgRating}</span>
                                     </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            audioService.speak(`${service.title}. Localizado em ${service.address}.`, language);
+                                        }}
+                                        className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-mira-orange-pastel hover:text-mira-orange transition-all"
+                                    >
+                                        <Volume2 size={16} />
+                                    </button>
                                 </div>
 
                                 <div className="space-y-4">

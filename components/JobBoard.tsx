@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { JobPost, WORK_TOPICS, CATEGORIES } from '../types';
-import { Search, Briefcase, ExternalLink, MapPin, Building2, TrendingUp, ChevronDown, Filter, X, SlidersHorizontal, Map as MapIcon, Globe, FileText, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { Search, Briefcase, ExternalLink, MapPin, Building2, TrendingUp, ChevronDown, Filter, X, SlidersHorizontal, Map as MapIcon, Globe, FileText, RefreshCcw, AlertTriangle, Volume2 } from 'lucide-react';
 import { analytics } from '../services/analyticsService';
 import { supabase } from '../lib/supabase';
 import { t } from '../utils/translations';
+import { audioService } from '../services/audioService';
 
 interface JobBoardProps {
   language: string;
@@ -37,6 +38,20 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
   const fetchJobs = async (retries = 3) => {
     setLoading(true);
     setError(null);
+
+    // Resilience: Hydro-charge from local cache immediately
+    const cached = localStorage.getItem('mira_jobs_cache');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setJobs(parsed);
+          setLoading(false); // Can show cached data early
+          console.log("MIRA: Rehydrated Jobs from localStorage");
+        }
+      } catch (e) { }
+    }
+
     try {
       const { data, error } = await supabase.from('job_posts').select('*').order('created_at', { ascending: false });
       if (error) throw error;
@@ -56,8 +71,8 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
           workTopic: dbJob.work_topic || 'Outros'
         }));
         setJobs(formattedJobs);
+        localStorage.setItem('mira_jobs_cache', JSON.stringify(formattedJobs));
       } else {
-        setJobs([]);
         if (retries > 0) {
           console.warn(`MIRA: Nenhuma vaga encontrada, tentando novamente... (${retries})`);
           setTimeout(() => fetchJobs(retries - 1), 1000);
@@ -236,9 +251,21 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
                     </div>
                   </div>
                   <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-2">
-                    <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                      {t('jobs_published_ago', language)} {job.datePosted}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                        {t('jobs_published_ago', language)} {job.datePosted}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          audioService.speak(`${job.title}. ${job.sourceName} em ${job.location}.`, language);
+                        }}
+                        className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-mira-orange-pastel hover:text-mira-orange transition-all active:scale-90"
+                        title="Ouvir descrição"
+                      >
+                        <Volume2 size={14} />
+                      </button>
+                    </div>
                     <div className="bg-slate-900 text-white p-2.5 rounded-xl group-hover:bg-mira-orange transition-colors">
                       <ExternalLink size={16} />
                     </div>

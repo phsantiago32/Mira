@@ -3,9 +3,10 @@
 import React, { useState, useMemo } from "react";
 import {
     ChevronRight, ArrowLeft, CheckCircle2, FileText, Info,
-    Landmark, AlertCircle, BookOpen, Star, HelpCircle
+    Landmark, AlertCircle, BookOpen, Star, HelpCircle, Volume2
 } from "lucide-react";
 import { t } from "../utils/translations";
+import { audioService } from "../services/audioService";
 import { templates } from "../utils/documentsDatabase";
 
 /**
@@ -286,9 +287,20 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] border-l-4 border-mira-orange pl-3">Passos Obrigatórios</h3>
                     <div className="grid gap-3">
                         {checklist.steps.map((s, i) => (
-                            <div key={i} className="flex gap-4 items-start p-5 bg-slate-50 rounded-3xl border border-slate-100/50">
+                            <div key={i} className="flex gap-4 items-start p-5 bg-slate-50 rounded-3xl border border-slate-100/50 group">
                                 <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center text-[10px] font-black text-mira-orange shadow-sm shrink-0 border border-slate-100">{i + 1}</div>
-                                <p className="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-normal">{s}</p>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <p className="text-[11px] font-bold text-slate-700 uppercase tracking-tight leading-normal">{s}</p>
+                                        <button
+                                            onClick={() => audioService.speak(s, language)}
+                                            className="p-2 bg-white text-slate-300 rounded-xl hover:text-mira-orange hover:shadow-sm transition-all active:scale-90"
+                                            title="Ouvir instrução"
+                                        >
+                                            <Volume2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>

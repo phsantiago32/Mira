@@ -12,6 +12,7 @@ import { autoTranslateText, generateSpeech } from '../services/geminiService';
 import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
 import { communityService } from '../services/communityService';
+import { emailService } from '../services/emailService';
 import { useToast } from './Toast';
 
 // Audio & Translation Helpers
@@ -420,9 +421,17 @@ const CommunityView: React.FC<CommunityViewProps> = ({
           return p;
         }));
       }
+
+      // Proactive Email Sync
+      await emailService.sendEmail('report', {
+        postId: reportingItem?.postId,
+        commentId: reportingItem?.commentId,
+        message: reportForm.reason
+      }, user);
+
       setReportingItem(null);
       setReportForm({ name: user.name || '', email: user.email || '', reason: '' });
-      showToast("Denúncia enviada com sucesso para análise.", "success");
+      showToast("Denúncia registada no DB e enviada para o canal seguro.", "success");
     } catch (e) {
       showToast("Erro ao enviar denúncia. Tenta novamente.", "error");
     }
