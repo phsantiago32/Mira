@@ -35,6 +35,9 @@ export interface NotificationPreferences {
   MAP_URGENCY: boolean; // Alertas de balcões abertos ou greves em serviços
   MIRA_INSIGHTS: boolean; // Novos artigos e guias práticos do Learning Hub
   SOCIAL_CONNECT: boolean; // Quando alguém responde ou valida seus posts
+  MIRA_ARTICLE: boolean; // Novo Artigo MIRA
+  COMMUNITY_REPLY: boolean; // Novo comentário no seu Post
+  COMMUNITY_FOLLOW_UP: boolean; // Novo comentário em Post que comentou
 }
 
 export const UNIFIED_CATEGORIES = [

@@ -187,7 +187,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-orange transition-colors" size={20} />
                             <input
                                 type={showPass ? "text" : "password"}
-                                placeholder={t('auth_pass_placeholder', language)}
+                                placeholder="A sua Palavra-passe"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 className="w-full pl-14 pr-12 py-5 bg-white/10 border-2 border-white/10 rounded-[1.5rem] text-sm font-bold text-white placeholder:text-white/40 focus:border-mira-orange focus:bg-white/20 transition-all outline-none shadow-sm backdrop-blur-md"
@@ -306,19 +306,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
 
                 {/* Link de Registro Separado */}
                 {!isForgotPassword && (
-                    <div className="text-center mt-10 mb-8 animate-in fade-in duration-1000">
-                        <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[10px] font-black text-white/80 hover:text-white transition-colors uppercase tracking-[0.2em] drop-shadow-sm">
-                            {isLogin ? 'Ainda não tens conta?' : 'Já fazes parte da rede?'} <span className="text-white underline decoration-white/40 underline-offset-8 decoration-2">{isLogin ? 'Regista-te aqui' : 'Entra aqui'}</span>
+                    <div className="text-center mt-12 mb-6 animate-in fade-in duration-1000">
+                        <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[11px] font-black text-white/90 hover:text-mira-orange transition-colors uppercase tracking-[0.2em] drop-shadow-sm flex items-center gap-3 mx-auto">
+                            <span className="w-8 h-px bg-white/20"></span>
+                            {isLogin ? 'Registar nova conta' : 'Já tenho uma conta MIRA'}
+                            <span className="w-8 h-px bg-white/20"></span>
                         </button>
                     </div>
                 )}
 
-                {/* MIRA Lights moved here */}
-                <div className="flex items-center gap-2.5 justify-center mb-10">
-                    <div className="w-2 h-2 rounded-full bg-mira-orange dot-flash-1 shadow-[0_0_10px_rgba(249,115,22,0.8)]"></div>
-                    <div className="w-2 h-2 rounded-full bg-mira-blue-light dot-flash-2 shadow-[0_0_10px_rgba(0,229,255,0.8)]"></div>
-                    <div className="w-2 h-2 rounded-full bg-mira-blue dot-flash-3 shadow-[0_0_10px_rgba(0,123,255,0.8)]"></div>
-                    <div className="w-2 h-2 rounded-full bg-mira-orange-pastel dot-flash-4 shadow-[0_0_10px_rgba(249,115,22,0.5)]"></div>
+                {/* MIRA Lights moved here in the middle */}
+                <div className="flex items-center gap-4 justify-center py-6 mb-8 group cursor-help" title="Conexões Ativas MIRA">
+                    <div className="w-2.5 h-2.5 rounded-full bg-mira-orange dot-flash-1 shadow-[0_0_15px_rgba(249,115,22,1)]"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-mira-blue-light dot-flash-2 shadow-[0_0_15px_rgba(0,229,255,1)]"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-mira-blue dot-flash-3 shadow-[0_0_15px_rgba(0,123,255,1)]"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-white/40 dot-flash-4 shadow-[0_0_15px_rgba(255,255,255,1)] border border-white/20"></div>
                 </div>
             </div>
 

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { JobPost, WORK_TOPICS, CATEGORIES } from '../types';
-import { Search, Briefcase, ExternalLink, MapPin, Building2, TrendingUp, ChevronDown, Filter, X, SlidersHorizontal, Map as MapIcon, Globe, FileText } from 'lucide-react';
+import { Search, Briefcase, ExternalLink, MapPin, Building2, TrendingUp, ChevronDown, Filter, X, SlidersHorizontal, Map as MapIcon, Globe, FileText, RefreshCcw, AlertTriangle } from 'lucide-react';
 import { analytics } from '../services/analyticsService';
 import { supabase } from '../lib/supabase';
 import { t } from '../utils/translations';
@@ -32,50 +32,48 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
   const [selectedWorkTopic, setSelectedWorkTopic] = useState('Todos');
   const [jobs, setJobs] = useState<JobPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchJobs = async (retries = 3) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase.from('job_posts').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+
+      console.log("MIRA: Vagas recebidas do DB:", data?.length || 0);
+
+      if (data && data.length > 0) {
+        const formattedJobs: JobPost[] = data.map(dbJob => ({
+          id: dbJob.id,
+          title: dbJob.title || 'Sem título',
+          location: dbJob.location || 'Portugal',
+          sourceName: dbJob.source_name || 'MIRA',
+          sourceUrl: dbJob.source_url || '#',
+          datePosted: 'Hoje',
+          tags: dbJob.tags || [],
+          category: dbJob.category || 'Emprego e Formação',
+          workTopic: dbJob.work_topic || 'Outros'
+        }));
+        setJobs(formattedJobs);
+      } else {
+        setJobs([]);
+        if (retries > 0) {
+          console.warn(`MIRA: Nenhuma vaga encontrada, tentando novamente... (${retries})`);
+          setTimeout(() => fetchJobs(retries - 1), 1000);
+        }
+      }
+    } catch (err: any) {
+      console.error("MIRA Exception in JobBoard:", err);
+      setError(err.message || 'Falha na conexão');
+      if (retries > 0) setTimeout(() => fetchJobs(retries - 1), 2000);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase.from('job_posts').select('*').order('created_at', { ascending: false });
-        if (error) {
-          console.error("MIRA Job Fetch Error:", error);
-          throw error;
-        }
-
-        console.log("MIRA: Vagas recebidas do DB:", data?.length || 0);
-
-        if (data) {
-          const formattedJobs: JobPost[] = data.map(dbJob => ({
-            id: dbJob.id,
-            title: dbJob.title || 'Sem título',
-            location: dbJob.location || 'Portugal',
-            sourceName: dbJob.source_name || 'MIRA',
-            sourceUrl: dbJob.source_url || '#',
-            datePosted: 'Hoje',
-            tags: dbJob.tags || [],
-            category: dbJob.category || 'Emprego e Formação',
-            workTopic: dbJob.work_topic || 'Outros'
-          }));
-          setJobs(formattedJobs);
-          console.log("MIRA: Vagas formatadas e prontas:", formattedJobs.length);
-        } else {
-          setJobs([]);
-        }
-      } catch (err) {
-        console.error("MIRA Exception in JobBoard:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchWithDelay = async () => {
-      // Stagger request to avoid Navigator lock contention
-      await new Promise(resolve => setTimeout(resolve, 500));
-      fetchJobs();
-    };
-
-    fetchWithDelay();
+    fetchJobs();
   }, []);
 
   const filteredJobs = jobs.filter(job => {
@@ -90,7 +88,7 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
     <div className="h-full bg-white flex flex-col pb-24 overflow-hidden">
       {/* Header Sticky Section */}
       <div className="bg-white px-6 pt-8 pb-4 space-y-6 z-30 border-b border-slate-50">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div className="space-y-1">
             <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">{t('jobs_title', language)}</h2>
             <div className="flex items-center gap-2">
@@ -98,6 +96,16 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
               <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">{t('jobs_subtitle', language)}</p>
             </div>
           </div>
+          <button
+            onClick={() => fetchJobs()}
+            disabled={loading}
+            className="p-3 bg-slate-50 text-slate-400 hover:text-mira-orange hover:bg-mira-orange-pastel rounded-2xl transition-all active:rotate-180 duration-500"
+            title="Sincronizar Vagas"
+          >
+            <RefreshCcw size={18} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+        <div className="flex items-center justify-between">
           <div className="flex bg-slate-100 p-1.5 rounded-2xl">
             <button
               onClick={() => setActiveTab('jobs')}

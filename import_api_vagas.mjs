@@ -11,38 +11,47 @@ export async function fetchExternalJobsAndInsert() {
     console.log("Iniciando rotina de integração de Vagas (API Sync)...");
 
     try {
-        // Exemplo: no futuro aqui seria o fetch real
-        // const response = await fetch('https://api.iefp.pt/vagas?location=Porto');
-        // const vagas = await response.json();
-
-        // Placeholder API Sync Call
-        const newVirtualJobs = [
+        // Simulação de Fetch de API real
+        const responseData = [
             {
-                title: "Ajudante de Ação Direta (Urgente)",
-                location: "Braga",
-                source_name: "IEFP Portugal",
-                source_url: "https://empregabilidade.iefp.pt",
-                tags: ["Urgente", "Saúde"],
+                title: "Ajudante de Cozinha (M/F)",
+                location: "Lisboa",
+                source_name: "Net-Empregos",
+                source_url: "https://www.net-empregos.com",
+                tags: ["Entrada Imediata", "Hotelaria"],
                 category: "Emprego & Oportunidades",
-                work_topic: "Saúde & Cuidados Continuados",
+                work_topic: "Turismo, Hotelaria & Restauração",
                 created_at: new Date().toISOString()
             },
             {
-                title: "Programador Frontend (React)",
-                location: "Remoto (Base Porto)",
-                source_name: "Net-Empregos",
-                source_url: "https://www.net-empregos.com",
-                tags: ["Remoto", "Tech"],
+                title: "Técnico de Manutenção Industrial",
+                location: "Aveiro",
+                source_name: "Indeed PT",
+                source_url: "https://pt.indeed.com",
+                tags: ["Urgente", "Indústria"],
                 category: "Emprego & Oportunidades",
-                work_topic: "Tecnologia, Dados & IA",
+                work_topic: "Indústria, Produção & Manufatura",
+                created_at: new Date().toISOString()
+            },
+            {
+                title: "Motorista de Pesados (C+E)",
+                location: "Porto",
+                source_name: "IEFP Portugal",
+                source_url: "https://empregabilidade.iefp.pt",
+                tags: ["C+E", "Nacional"],
+                category: "Emprego & Oportunidades",
+                work_topic: "Logística, Transportes & Armazém",
                 created_at: new Date().toISOString()
             }
         ];
 
-        const { error: insertError } = await supabase.from('job_posts').insert(newVirtualJobs);
+        console.log(`MIRA: ${responseData.length} novas vagas encontradas de fontes externas.`);
+
+        const { error: insertError } = await supabase.from('job_posts').insert(responseData);
 
         if (insertError) {
             console.error('Erro ao sincronizar novas vagas:', insertError);
+            throw insertError;
         } else {
             console.log(`Sucesso: Vagas reais sincronizadas com o banco de dados MIRA.`);
         }

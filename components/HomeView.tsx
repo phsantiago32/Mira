@@ -4,7 +4,7 @@ import { ViewType, User as UserType, Post, NotificationPreferences } from '../ty
 import {
   Briefcase, Map as MapIcon, FileText,
   Bell, HeartHandshake, Bot, ShieldCheck,
-  Heart, BookOpen, User, CheckCircle2, MessageSquare, Sparkles, ArrowRight, BellRing, X, ToggleLeft, ToggleRight, ShieldAlert, AlertTriangle, Activity, Scale, Newspaper, ShieldQuestion, LogOut
+  Heart, BookOpen, User, CheckCircle2, MessageSquare, Sparkles, ArrowRight, BellRing, X, ToggleLeft, ToggleRight, ShieldAlert, AlertTriangle, Activity, Scale, Newspaper, ShieldQuestion, LogOut, MessageCircle
 } from 'lucide-react';
 import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
@@ -51,8 +51,44 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
     COMMUNITY_REPUTATION: true,
     MAP_URGENCY: true,
     MIRA_INSIGHTS: true,
-    SOCIAL_CONNECT: true
+    SOCIAL_CONNECT: true,
+    MIRA_ARTICLE: true,
+    COMMUNITY_REPLY: true,
+    COMMUNITY_FOLLOW_UP: true
   });
+
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestionData, setSuggestionData] = useState({ subject: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSuggestionSubmit = async () => {
+    if (!suggestionData.message) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await (window as any).supabase.from('app_suggestions').insert([{
+        user_id: user.id,
+        user_name: user.name,
+        user_email: user.email,
+        subject: suggestionData.subject,
+        message: suggestionData.message
+      }]);
+
+      if (error) throw error;
+
+      const emailSubject = encodeURIComponent(`MIRA APP: ${suggestionData.subject || 'Sugestão'}`);
+      const emailBody = encodeURIComponent(`Usuário: ${user.name}\nEmail: ${user.email}\n\nSugestão:\n${suggestionData.message}`);
+      window.location.href = `mailto:mira.app@hotmail.com?subject=${emailSubject}&body=${emailBody}`;
+
+      setShowSuggestionModal(false);
+      setSuggestionData({ subject: '', message: '' });
+      alert("Obrigado pela sua sugestão!");
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao registar sugestão.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const quickAccess = [
     { id: ViewType.COMMUNITY, label: t('nav_community', language), icon: HeartHandshake, color: 'bg-mira-orange-pastel text-mira-orange' },
@@ -94,6 +130,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
                 { id: 'JOB_MATCHES', label: 'Vagas do seu Perfil', icon: Briefcase, color: 'text-mira-orange' },
                 { id: 'MAP_URGENCY', label: 'Urgências nos Balcões', icon: AlertTriangle, color: 'text-red-600' },
                 { id: 'SOCIAL_CONNECT', label: 'Interações Comunitárias', icon: MessageSquare, color: 'text-mira-green' },
+                { id: 'MIRA_ARTICLE', label: 'Novo Artigo MIRA', icon: Newspaper, color: 'text-indigo-500' },
+                { id: 'COMMUNITY_REPLY', label: 'Comentário no seu Post', icon: MessageCircle, color: 'text-mira-orange' },
+                { id: 'COMMUNITY_FOLLOW_UP', label: 'Comentário em Post seguido', icon: Activity, color: 'text-mira-blue' },
               ].map((item) => (
                 <div key={item.id} className="flex items-center justify-between p-5 bg-slate-50/50 rounded-[2rem] border border-slate-100 transition-all hover:bg-white">
                   <div className="flex items-center gap-4">
@@ -127,13 +166,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
               </div>
               <button onClick={() => setShowNotifSettings(true)} className="p-3 bg-white rounded-2xl shadow-xl border border-slate-50 text-mira-orange active:scale-90 transition-all">
                 <BellRing size={22} strokeWidth={2.5} />
-              </button>
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-2 p-3 bg-red-50 text-red-500 rounded-2xl border border-red-100 active:scale-90 transition-all shadow-sm group"
-                title="Sair"
-              >
-                <LogOut size={22} strokeWidth={2.5} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </div>
@@ -180,6 +212,15 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
                 <p className="font-black text-slate-900 text-xs tracking-tight uppercase group-hover:text-mira-orange">{item.label}</p>
               </button>
             ))}
+            <button
+              onClick={() => setShowSuggestionModal(true)}
+              className="bg-slate-900 p-8 rounded-[3rem] border border-slate-800 shadow-xl hover:shadow-2xl transition-all text-center group active:scale-95 flex flex-col items-center justify-center text-white"
+            >
+              <div className="w-16 h-16 rounded-[1.5rem] bg-white/10 flex items-center justify-center mb-4 transition-all group-hover:scale-110 shadow-sm text-mira-orange">
+                <MessageSquare size={32} />
+              </div>
+              <p className="font-black text-white text-xs tracking-tight uppercase group-hover:text-mira-orange">Sugerir Melhorias</p>
+            </button>
           </div>
         </section>
 
@@ -220,6 +261,54 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
           </div>
         </footer>
       </div>
+      {/* SUGGESTION MODAL */}
+      {showSuggestionModal && (
+        <div className="fixed inset-0 z-[600] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[3.5rem] p-10 shadow-2xl relative">
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-mira-orange-pastel text-mira-orange rounded-2xl">
+                  <Sparkles size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Sugerir Melhoria</h3>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">A sua voz faz o MIRA crescer</p>
+                </div>
+              </div>
+              <button onClick={() => setShowSuggestionModal(false)} className="p-2 hover:bg-slate-50 rounded-full transition-colors"><X size={24} /></button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Assunto</label>
+                <input
+                  type="text"
+                  value={suggestionData.subject}
+                  onChange={e => setSuggestionData({ ...suggestionData, subject: e.target.value })}
+                  placeholder="Ex: Novo recurso, erro no mapa..."
+                  className="w-full p-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] text-xs font-bold focus:bg-white focus:border-mira-orange outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Descrição</label>
+                <textarea
+                  value={suggestionData.message}
+                  onChange={e => setSuggestionData({ ...suggestionData, message: e.target.value })}
+                  placeholder="Conte-nos como podemos melhorar o MIRA..."
+                  className="w-full h-40 p-6 bg-slate-50 border-2 border-transparent rounded-[2rem] text-xs font-bold focus:bg-white focus:border-mira-orange outline-none transition-all resize-none"
+                />
+              </div>
+              <button
+                onClick={handleSuggestionSubmit}
+                disabled={!suggestionData.message || isSubmitting}
+                className="w-full bg-mira-orange text-white py-6 rounded-[2rem] font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-orange-100 active:scale-95 transition-all mt-4 disabled:opacity-30"
+              >
+                {isSubmitting ? 'A ENVIAR...' : 'Enviar Sugestão'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

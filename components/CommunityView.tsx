@@ -776,7 +776,27 @@ const CommunityView: React.FC<CommunityViewProps> = ({
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Motivo da Denúncia</label>
                 <textarea placeholder="Explique o problema (Fraude, Ódio, Spam...)" value={reportForm.reason} onChange={e => setReportForm({ ...reportForm, reason: e.target.value })} className="w-full h-32 p-5 bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-red-100 outline-none resize-none shadow-inner" />
               </div>
-              <button onClick={handleReportSubmit} className="w-full bg-red-600 text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all mt-4 hover:bg-red-700">
+              <button onClick={async () => {
+                try {
+                  await communityService.reportContent({
+                    postId: reportingItem.postId,
+                    commentId: reportingItem.commentId,
+                    userId: user.id,
+                    reason: reportForm.reason,
+                    email: reportForm.email
+                  });
+
+                  // Trigger mailto as requested
+                  const subject = encodeURIComponent(`DENÚNCIA MIRA: ${reportingItem.commentId ? 'Comentário' : 'Post'}`);
+                  const body = encodeURIComponent(`Denunciante: ${reportForm.name} (${reportForm.email})\nMotivo: ${reportForm.reason}\nID Conteúdo: ${reportingItem.commentId || reportingItem.postId}`);
+                  window.location.href = `mailto:mira.app@hotmail.com?subject=${subject}&body=${body}`;
+
+                  setReportingItem(null);
+                  alert("Denúncia enviada com sucesso!");
+                } catch (err) {
+                  alert("Erro ao enviar denúncia.");
+                }
+              }} className="w-full bg-red-600 text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all mt-4 hover:bg-red-700">
                 Confirmar Denúncia
               </button>
             </div>

@@ -31,7 +31,10 @@ const INITIAL_NOTIFS: NotificationPreferences = {
   COMMUNITY_REPUTATION: true,
   MAP_URGENCY: true,
   MIRA_INSIGHTS: true,
-  SOCIAL_CONNECT: true
+  SOCIAL_CONNECT: true,
+  MIRA_ARTICLE: true,
+  COMMUNITY_REPLY: true,
+  COMMUNITY_FOLLOW_UP: true
 };
 
 
@@ -273,10 +276,6 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
-
-            <button onClick={handleLogoutAction} className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-sm ${isAdmin ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-white text-red-500 border border-red-50 hover:bg-red-50'}`}>
-              <LogOut size={16} /><span className="hidden sm:inline">Sair</span>
-            </button>
           </div>
         </header>
 
