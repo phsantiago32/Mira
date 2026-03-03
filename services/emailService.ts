@@ -9,8 +9,8 @@ export const emailService = {
     async sendEmail(type: 'suggestion' | 'report', data: any, user: any) {
         const TO_EMAIL = 'mira.app@hotmail.com';
         const subject = type === 'suggestion'
-            ? `MIRA SUGGESTION: ${data.subject || 'Nova Ideia'}`
-            : `MIRA REPORT: Denúncia de Conteúdo`;
+            ? `[MIRA SUGGESTION] ${data.subject || 'Nova Ideia'}`
+            : `[MIRA REPORT] Denúncia de Conteúdo`;
 
         const bodyText = `
 --------------------------------------------------
@@ -21,6 +21,8 @@ ID UTILIZADOR: ${user?.id || 'N/A'}
 EMAIL: ${user?.email || 'N/A'}
 DATA: ${new Date().toLocaleString('pt-PT')}
 
+ASSUNTO: ${data.subject || 'N/A'}
+
 CONTEÚDO:
 ${data.message || data.content || 'Sem mensagem informada.'}
 
@@ -29,20 +31,13 @@ Relatório gerado automaticamente pelo Mira App Engine 2026.
 --------------------------------------------------
     `;
 
-        // Strategy 1: Attempt invisible send via Edge Function (future-proof)
-        try {
-            // In the future, this would call a real backend
-            // const { error } = await supabase.functions.invoke('send-email', { body: { ... } });
-        } catch (e) { }
-
-        // Strategy 2: Reliable Mailto link (UI feedback is handled in component)
         const emailSubject = encodeURIComponent(subject);
         const emailBody = encodeURIComponent(bodyText);
 
-        // We use a small delay ensure the user sees the 'Success' feedback in-app first
+        // Feedback visual imediato antes de abrir o cliente de email
         setTimeout(() => {
             window.location.href = `mailto:${TO_EMAIL}?subject=${emailSubject}&body=${emailBody}`;
-        }, 1500);
+        }, 1000);
 
         return true;
     }

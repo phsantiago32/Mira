@@ -19,7 +19,8 @@ export const communityService = {
 
         if (error) {
             console.error('Error fetching posts:', error);
-            return [];
+            // Throw so App.tsx can keep existing PROTECTED_POSTS instead of overwriting with empty
+            throw error;
         }
 
         if (!data) return [];
@@ -74,9 +75,10 @@ export const communityService = {
                 author_id: postData.authorId,
                 title: postData.title,
                 content: postData.content,
-                category: postData.category,
+                category: postData.category || 'Geral',
                 background_image: postData.backgroundImage,
-                validation_status: 'pending'
+                validation_status: 'pending',
+                created_at: new Date().toISOString()
             }
         ]).select().single();
 
@@ -163,20 +165,22 @@ export const communityService = {
         }
     },
 
-    async reportContent(data: { postId?: string, commentId?: string, userId: string, reason: string, email?: string }) {
-        const { error } = await supabase.from('community_reports').insert([{
-            post_id: data.postId,
-            comment_id: data.commentId,
-            user_id: data.userId,
-            reason: data.reason,
-            reporter_email: data.email
-        }]);
+    async reportContent(data: { postId?: string, commentId?: string, userId: string, reason: string, email?: string, name?: string }) {
+        const type = data.postId ? 'post_report' : 'comment_report';
+        const targetId = data.postId || data.commentId || 'desconhecido';
+        const contentStr = `Denúncia de ${type === 'post_report' ? 'Post' : 'Comentário'} ID: ${targetId}\nMotivo: ${data.reason}\nReportado por: ${data.email || data.name || 'Anónimo'}`;
 
-        if (error) throw error;
+        const { submitReportRest } = await import('./reportService');
+        await submitReportRest(type, contentStr);
 
-        // If it was a post, increment its report counter
+        // Try to increment post report counter, but don't fail if RPC doesn't exist
         if (data.postId) {
-            await supabase.rpc('increment_post_reports', { p_id: data.postId });
+            try {
+                await supabase.rpc('increment_post_reports', { p_id: data.postId });
+            } catch (rpcErr) {
+                // RPC may not be deployed - silently ignore, report was already saved
+                console.warn('increment_post_reports RPC not available:', rpcErr);
+            }
         }
     },
 

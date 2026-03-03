@@ -88,7 +88,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
 
             if (authError) {
                 console.error("MIRA Auth error:", authError);
-                setErrorMsg(authError.message === 'Invalid login credentials' ? 'Utilizador ou senha incorretos.' : authError.message);
+
+                let errorText = authError.message;
+                const msgLower = authError.message.toLowerCase();
+
+                if (msgLower.includes('invalid login credentials')) {
+                    errorText = 'E-mail ou senha incorretos.';
+                } else if (msgLower.includes('user already registered')) {
+                    errorText = 'Este e-mail já está registado. Tente entrar em vez de criar conta.';
+                } else if (msgLower.includes('password should be at least')) {
+                    errorText = 'A senha é muito fraca. Deve ter pelo menos 6 caracteres.';
+                } else if (msgLower.includes('email not confirmed')) {
+                    errorText = 'Conta não confirmada. Verifique a sua caixa de entrada.';
+                } else if (msgLower.includes('invalid email') || msgLower.includes('format')) {
+                    errorText = 'O formato do e-mail é inválido.';
+                } else if (msgLower.includes('network') || msgLower.includes('fetch')) {
+                    errorText = 'Problema de ligação. Verifique a sua internet.';
+                } else if (msgLower.includes('rate limit')) {
+                    errorText = 'Muitas tentativas. Aguarde uns minutos e tente novamente.';
+                }
+
+                setErrorMsg(errorText);
                 setIsLoading(false);
                 return;
             }
@@ -161,11 +181,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                         </div>
                         <button
                             type="button"
-                            onClick={() => { setIsForgotPassword(false); alert('Email de recuperação enviado!'); }}
+                            onClick={() => { setIsForgotPassword(false); alert(language === 'PT' ? 'Email de recuperação enviado!' : 'Recovery email sent!'); }}
                             disabled={!email || isLoading}
                             className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-xl active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                         >
-                            {isLoading ? 'A PROCESSAR...' : 'Enviar Link de Recuperação'}
+                            {isLoading ? t('auth_btn_sending_recovery', language) : t('auth_btn_send_recovery', language)}
                         </button>
                     </div>
                 </div>
@@ -193,7 +213,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                             <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-orange transition-colors" size={20} />
                             <input
                                 type={showPass ? "text" : "password"}
-                                placeholder="A sua Palavra-passe"
+                                placeholder={t('auth_pass_placeholder', language)}
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 className="w-full pl-14 pr-12 py-5 bg-white/10 border-2 border-white/10 rounded-[1.5rem] text-sm font-bold text-white placeholder:text-white/40 focus:border-mira-orange focus:bg-white/20 transition-all outline-none shadow-sm backdrop-blur-md"
@@ -222,7 +242,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                     )}
 
                     <button type="submit" disabled={isLoading || !email || !password} className="w-full py-5 bg-mira-orange hover:bg-[#f97316] text-white rounded-[1.5rem] font-black uppercase tracking-widest text-[12px] shadow-[0_15px_30px_rgba(249,115,22,0.3)] hover:shadow-[0_20px_40px_rgba(249,115,22,0.4)] transition-all active:scale-[0.98] disabled:opacity-50 mt-4 flex items-center justify-center gap-2">
-                        {isLoading ? <span className="animate-pulse">A CONECTAR...</span> : (isLogin ? 'ENTRAR AGORA' : 'CRIAR CONTA MIRA')}
+                        {isLoading ? <span className="animate-pulse">{t('auth_btn_connecting', language)}</span> : (isLogin ? t('auth_btn_login_now', language) : t('auth_btn_create_account_mira', language))}
                     </button>
                 </div>
             </div>
@@ -315,7 +335,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                     <div className="text-center mt-12 mb-6 animate-in fade-in duration-1000">
                         <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[11px] font-black text-white/90 hover:text-mira-orange transition-colors uppercase tracking-[0.2em] drop-shadow-sm flex items-center gap-3 mx-auto">
                             <span className="w-8 h-px bg-white/20"></span>
-                            {isLogin ? 'Registar nova conta' : 'Já tenho uma conta MIRA'}
+                            {isLogin ? t('auth_link_register_new', language) : t('auth_link_already_have_account', language)}
                             <span className="w-8 h-px bg-white/20"></span>
                         </button>
                     </div>

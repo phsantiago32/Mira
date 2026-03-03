@@ -127,5 +127,115 @@ export const adminService = {
             .eq('id', postId);
 
         if (error) throw error;
+    },
+
+    /**
+     * Manage Suggestions & Complaints
+     */
+    async fetchSuggestions() {
+        const { data: oldData, error: e1 } = await supabase.from('suggestions').select('*, profiles(name)').order('created_at', { ascending: false });
+        const { data: newData, error: e2 } = await supabase.from('reports').select('*').eq('type', 'suggestion').order('created_at', { ascending: false });
+
+        const mappedNew = (newData || []).map(r => ({
+            id: r.id,
+            profiles: { name: 'REST Form' },
+            subject: 'Nova Sugestão',
+            content: r.content,
+            created_at: r.created_at
+        }));
+
+        return [...(oldData || []), ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    },
+
+    async fetchComplaints() {
+        const { data: oldData } = await supabase.from('complaints').select('*, profiles(name)').order('created_at', { ascending: false });
+        const { data: newData } = await supabase.from('reports').select('*').in('type', ['service_rating', 'service_queue']).order('created_at', { ascending: false });
+
+        const mappedNew = (newData || []).map(r => ({
+            id: r.id,
+            profiles: { name: 'REST Form' },
+            subject: r.type === 'service_rating' ? 'Avaliação de Serviço' : 'Fila de Serviço',
+            content: r.content,
+            created_at: r.created_at
+        }));
+
+        return [...(oldData || []), ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    },
+
+    async deleteSuggestion(id: string) {
+        await supabase.from('suggestions').delete().eq('id', id);
+        await supabase.from('reports').delete().eq('id', id);
+    },
+
+    async deleteComplaint(id: string) {
+        await supabase.from('complaints').delete().eq('id', id);
+        await supabase.from('reports').delete().eq('id', id);
+    },
+
+    async fetchCommunityReports() {
+        const { data: oldData } = await supabase
+            .from('community_reports')
+            .select('*, profiles:user_id(name), posts:post_id(content), comments:comment_id(content)')
+            .order('created_at', { ascending: false });
+
+        const { data: newData } = await supabase.from('reports').select('*').in('type', ['post_report', 'comment_report']).order('created_at', { ascending: false });
+
+        const mappedNew = (newData || []).map(r => ({
+            id: r.id,
+            profiles: { name: 'REST Form' },
+            reporter_email: '',
+            reason: r.content,
+            post_id: r.type === 'post_report' ? 'sim' : null,
+            posts: null,
+            comments: null,
+            created_at: r.created_at
+        }));
+
+        return [...(oldData || []), ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    },
+
+    async deleteCommunityReport(id: string) {
+        await supabase.from('community_reports').delete().eq('id', id);
+        await supabase.from('reports').delete().eq('id', id);
+    },
+
+    /**
+     * AI Knowledge Management
+     */
+    async fetchAIKnowledge() {
+        const { data, error } = await supabase.from('suggestions')
+            .select('*')
+            .like('subject', '[SABER IA]%')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+
+        return data.map((item: any) => {
+            const lines = item.content.split('\n');
+            const categoryMatch = lines.find((l: string) => l.startsWith('Categoria:'))?.replace('Categoria:', '').trim() || '';
+            const sourceMatch = lines.find((l: string) => l.startsWith('Fonte:'))?.replace('Fonte:', '').trim() || '';
+            const infoText = lines.filter((l: string) => !l.startsWith('Categoria:') && !l.startsWith('Fonte:')).join('\n').trim();
+
+            return {
+                id: item.id,
+                topic: item.subject.replace('[SABER IA] ', ''),
+                information: infoText,
+                category: categoryMatch,
+                source: sourceMatch,
+                created_at: item.created_at
+            };
+        });
+    },
+
+    async addAIKnowledge(knowledge: { topic: string, information: string, category: string, source: string }) {
+        const { error } = await supabase.from('suggestions').insert([{
+            subject: `[SABER IA] ${knowledge.topic}`,
+            content: `Categoria: ${knowledge.category}\nFonte: ${knowledge.source}\n${knowledge.information}`
+        }]);
+        if (error) throw error;
+    },
+
+    async deleteAIKnowledge(id: string) {
+        const { error } = await supabase.from('suggestions').delete().eq('id', id);
+        if (error) throw error;
     }
 };

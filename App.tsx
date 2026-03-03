@@ -10,6 +10,7 @@ import { GamificationProfile } from './components/GamificationProfile';
 import { JobBoard } from './components/JobBoard';
 import { LearningHub } from './components/LearningHub';
 import { LocalServicesList } from './components/LocalServicesList';
+import { PROTECTED_POSTS } from './utils/protectedData';
 import { PrivacyPage } from './components/PrivacyPage';
 import { ConsentModal } from './components/ConsentModal';
 import { AuthScreen } from './components/AuthScreen';
@@ -22,6 +23,7 @@ import { MIRA_LOGO } from './constants';
 import { Bell, X, Info, Bot, Globe, ChevronDown, LayoutDashboard, LogOut, Sparkles, MessageCircle, ArrowLeft, Users, Volume2 } from 'lucide-react';
 import { t } from './utils/translations';
 import { ToastProvider } from './components/Toast';
+import { SplashScreen } from './components/SplashScreen';
 
 const INITIAL_NOTIFS: NotificationPreferences = {
   OFFICIAL_AIMA: true,
@@ -40,6 +42,7 @@ const INITIAL_NOTIFS: NotificationPreferences = {
 
 
 const App: React.FC = () => {
+  const [showSplash, setShowSplash] = useState(true);
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('mira_user');
     if (saved) {
@@ -52,9 +55,16 @@ const App: React.FC = () => {
   const [points, setPoints] = useState(0);
 
   const [language, setLanguage] = useState(() => {
+    const saved = localStorage.getItem('mira_language');
+    if (saved && ['PT', 'EN', 'ES', 'FR'].includes(saved)) return saved;
     const navLang = navigator.language?.split('-')[0]?.toUpperCase();
-    return ['PT', 'EN', 'ES', 'FR'].includes(navLang) ? navLang : 'EN';
+    return ['PT', 'EN', 'ES', 'FR'].includes(navLang) ? navLang : 'PT';
   });
+
+  const handleSetLanguage = (lang: string) => {
+    setLanguage(lang);
+    localStorage.setItem('mira_language', lang);
+  };
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   const [tasks, setTasks] = useState<DocumentTask[]>([]);
@@ -75,13 +85,56 @@ const App: React.FC = () => {
     localStorage.setItem('mira_community_posts', JSON.stringify(masterPosts));
   }, [masterPosts]);
 
-  // DB Sync for Posts
+  // DB Sync for Posts — PROTECTED_POSTS and Local Storage survive errors/wipes
   useEffect(() => {
     if (user && user.id) {
-      communityService.fetchPosts(user.id).then(dbPosts => {
-        if (dbPosts && dbPosts.length > 0) {
-          setMasterPosts(dbPosts);
-        }
+      communityService.fetchPosts(user.id).then(async dbPosts => {
+        setMasterPosts(prev => {
+          const finalPosts = [...(dbPosts || [])];
+
+          // 1. Preserve locally created posts that might be missing from DB (e.g., if DB was wiped or offline)
+          prev.forEach(localPost => {
+            if (!finalPosts.some(p => p.id === localPost.id)) {
+              finalPosts.push(localPost);
+            }
+          });
+
+          // 2. Ensure PROTECTED_POSTS are always present
+          PROTECTED_POSTS.forEach(pp => {
+            if (!finalPosts.some(p => p.id === pp.id || p.title === pp.title)) {
+              finalPosts.push(pp);
+            }
+          });
+
+          // Sort final array so newest posts appear first based on timestamp
+          return finalPosts.sort((a, b) => {
+            const timeA = new Date(a.timestamp === 'Agora mesmo' ? Date.now() : a.timestamp).getTime();
+            const timeB = new Date(b.timestamp === 'Agora mesmo' ? Date.now() : b.timestamp).getTime();
+            return timeB - timeA;
+          });
+        });
+      }).catch(() => {
+        // DB failed — ensure protected posts AND local posts are still shown
+        setMasterPosts(prev => {
+          const base = prev.length > 0 ? [...prev] : [];
+          PROTECTED_POSTS.forEach(pp => {
+            if (!base.some(p => p.id === pp.id || p.title === pp.title)) {
+              base.push(pp);
+            }
+          });
+          return base;
+        });
+      });
+    } else {
+      // Not logged in yet — ensure protected posts and local posts shown
+      setMasterPosts(prev => {
+        const base = prev.length > 0 ? [...prev] : [];
+        PROTECTED_POSTS.forEach(pp => {
+          if (!base.some(p => p.id === pp.id || p.title === pp.title)) {
+            base.push(pp);
+          }
+        });
+        return base;
       });
     }
   }, [user?.id]);
@@ -259,7 +312,8 @@ const App: React.FC = () => {
     }
   };
 
-  if (!user) return <AuthScreen onLogin={handleLogin} language={language} setLanguage={setLanguage} />;
+  if (showSplash) return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  if (!user) return <AuthScreen onLogin={handleLogin} language={language} setLanguage={handleSetLanguage} />;
 
   const isAdmin = user.role === 'admin';
 
@@ -277,15 +331,26 @@ const App: React.FC = () => {
 
           <div className="flex items-center gap-4">
 
-            <div className="relative">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangMenu(true)}
+                  className={`p-2.5 rounded-2xl flex items-center gap-3 transition-all shadow-lg ${isAdmin ? 'bg-slate-800 text-white shadow-xl' : 'bg-mira-orange text-white shadow-orange-500/30 hover:scale-110 active:scale-95'}`}
+                >
+                  <div className="p-1.5 bg-white/20 rounded-lg">
+                    <Globe size={18} className="animate-pulse-slow" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">{language}</span>
+                </button>
+              </div>
+
               <button
-                onClick={() => setShowLangMenu(true)}
-                className={`p-2.5 rounded-2xl flex items-center gap-3 transition-all shadow-lg ${isAdmin ? 'bg-slate-800 text-white shadow-xl' : 'bg-mira-orange text-white shadow-orange-500/30 hover:scale-110 active:scale-95'}`}
+                onClick={handleLogoutAction}
+                className={`p-2.5 rounded-2xl flex items-center gap-2 transition-all shadow-lg ${isAdmin ? 'bg-red-900/40 text-red-200 border border-red-500/30' : 'bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 active:scale-95'}`}
+                title={t('nav_logout', language)}
               >
-                <div className="p-1.5 bg-white/20 rounded-lg">
-                  <Globe size={18} className="animate-pulse-slow" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{language}</span>
+                <LogOut size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{t('nav_logout', language)}</span>
               </button>
             </div>
           </div>
@@ -313,7 +378,7 @@ const App: React.FC = () => {
                   ].map((l) => (
                     <button
                       key={l.code}
-                      onClick={() => { setLanguage(l.code); setShowLangMenu(false); }}
+                      onClick={() => { handleSetLanguage(l.code); setShowLangMenu(false); }}
                       className={`group p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-2 ${language === l.code ? 'bg-mira-orange border-mira-orange shadow-2xl scale-105' : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`}
                     >
                       <span className="text-3xl mb-1">{l.flag}</span>
@@ -345,8 +410,8 @@ const App: React.FC = () => {
           </div>
 
           {/* View Render Area */}
-          <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-64px)] md:h-full">
-            <div className="flex-1 overflow-y-auto no-scrollbar">
+          <main className="flex-1 overflow-hidden flex flex-col h-[calc(100vh-64px-72px)] md:h-full">
+            <div className="flex-1 overflow-y-auto no-scrollbar pb-4 md:pb-0">
               <div className="max-w-5xl mx-auto h-full relative">
                 {renderView()}
               </div>

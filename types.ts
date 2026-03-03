@@ -245,6 +245,8 @@ export interface DocumentTemplate {
   category: UnifiedCategory;
   complexity: 'Easy' | 'Medium' | 'Hard';
   description: string;
+  explanation?: string;
+  purpose: string;
   requirements: string[];
   fields: DocumentField[];
   authority: string;

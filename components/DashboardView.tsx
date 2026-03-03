@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase';
 import { MIRA_LOGO, COLORS, OFFICIAL_SOURCES } from '../constants';
 import { Post, JobPost, WORK_TOPICS, UNIFIED_CATEGORIES, Course } from '../types';
 import { IEFP_MASSIVE_DATABASE } from '../utils/iefpCoursesDatabase';
+import { PROTECTED_JOBS } from '../utils/protectedData';
 
 interface DashboardViewProps {
     masterPosts: Post[];
@@ -154,14 +155,25 @@ const DashboardView: React.FC<DashboardViewProps> = ({ masterPosts, onUpdatePost
     const handleUpdateJobs = async () => {
         setIsUpdatingJobs(true);
         try {
-            const { data, error } = await supabase.functions.invoke('sync-jobs');
+            const jobsToUpsert = PROTECTED_JOBS.map(job => ({
+                id: job.id, // Use real ID so upsert won't duplicate
+                title: job.title,
+                location: job.location,
+                source_name: job.sourceName,
+                source_url: job.sourceUrl,
+                date_posted: job.datePosted,
+                tags: job.tags,
+                category: job.category,
+                work_topic: job.workTopic
+            }));
+            const { error } = await supabase.from('job_posts').upsert(jobsToUpsert, { onConflict: 'id' });
             if (error) throw error;
 
-            alert(`MIRA: Sincronização concluída com sucesso. ${data.count} vagas foram processadas.`);
-            analytics.track('admin_job_sync', 'admin', 'Jobs', { count: data.count });
+            alert(`MIRA: Sincronização concluída com sucesso. ${jobsToUpsert.length} vagas asseguradas.`);
+            analytics.track('admin_job_sync', 'admin', 'Jobs', { count: jobsToUpsert.length });
         } catch (err) {
             console.error('Job sync error:', err);
-            alert("Erro ao sincronizar vagas via Cloud Function. Verifique as permissões no Supabase.");
+            alert("Erro ao sincronizar vagas via Supabase. Verifique a base de dados.");
         } finally {
             setIsUpdatingJobs(false);
         }

@@ -97,9 +97,20 @@ export async function generateOfficialPDF(templateTitle: string, data: Record<st
 
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
+
+  // Nome do arquivo mais seguro (slugify)
+  const safeTitle = templateTitle
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_') // Remove caracteres especiais
+    .replace(/_+/g, '_') // Remove sublinhados duplos
+    .replace(/^_|_$/g, ''); // Remove sublinhados no início/fim
+
   return {
     pdfUrl: url,
-    filename: `${templateTitle.toLowerCase().replace(/\s+/g, '_')}.pdf`,
-    blob
+    filename: `${safeTitle}.pdf`,
+    blob,
+    doc
   };
 }

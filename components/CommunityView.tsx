@@ -5,127 +5,16 @@ import {
   CheckCircle2, Search, Plus, X,
   ImageIcon, Bookmark, ThumbsUp, ThumbsDown,
   ChevronDown, Send, AlertTriangle, Trash2, Filter, Loader2,
-  Share2, Flag, UserPlus, Info, Reply, CheckCircle, ShieldX, ShieldAlert, Star, Users, Zap, Shield, Volume2
+  Share2, Flag, UserPlus, Info, Reply, CheckCircle, ShieldX, ShieldAlert, Star, Users, Zap, Shield, Volume2, Sparkles
 } from 'lucide-react';
 import { Post, UNIFIED_CATEGORIES, User, UnifiedCategory, Comment, ViewType } from '../types';
 import { autoTranslateText, generateSpeech } from '../services/geminiService';
 import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
 import { communityService } from '../services/communityService';
-import { emailService } from '../services/emailService';
 import { useToast } from './Toast';
 
-// Audio & Translation Helpers
-const translationCache: Record<string, string> = {};
-
-function decodeBase64(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function decodeAudioData(data: Uint8Array, ctx: AudioContext, numChannels: number): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  // Use the context's current sample rate if possible, or try to detect from metadata if we had any
-  // Gemini usually returns 24000
-  const buffer = ctx.createBuffer(numChannels, frameCount, ctx.sampleRate);
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
-
-const TranslatedText: React.FC<{ text: string, language: string, className?: string }> = ({ text, language, className }) => {
-  const [translated, setTranslated] = useState(text);
-  const [isTranslating, setIsTranslating] = useState(false);
-
-  useEffect(() => {
-    const cacheKey = `${text}_${language}`;
-    if (translationCache[cacheKey]) {
-      setTranslated(translationCache[cacheKey]);
-      return;
-    }
-
-    let isMounted = true;
-    setIsTranslating(true);
-    autoTranslateText(text, language).then(res => {
-      if (!isMounted) return;
-      translationCache[cacheKey] = res;
-      setTranslated(res);
-      setIsTranslating(false);
-    });
-    return () => { isMounted = false; };
-  }, [text, language]);
-
-  return <span className={className}>{translated} {isTranslating && <Loader2 size={12} className="inline animate-spin ml-1 opacity-50" />}</span>;
-}
-
-let activeSource: AudioBufferSourceNode | null = null;
-let currentAudioContext: AudioContext | null = null;
-
-const VoicePlayButton: React.FC<{ text: string, language: string }> = ({ text, language }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const stopAudio = () => {
-    if (activeSource) {
-      try { activeSource.stop(); } catch (e) { }
-      activeSource = null;
-    }
-    setIsPlaying(false);
-  };
-
-  const handlePlay = async () => {
-    if (isPlaying) { stopAudio(); return; }
-
-    stopAudio(); // Parar qualquer outro áudio na app
-    setIsLoading(true);
-
-    try {
-      const cacheKey = `${text}_${language}`;
-      let textToRead = translationCache[cacheKey] || text;
-
-      const audioData = await generateSpeech(textToRead, language);
-      setIsLoading(false);
-
-      if (!audioData) return;
-
-      if (!currentAudioContext) {
-        currentAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      if (currentAudioContext.state === 'suspended') await currentAudioContext.resume();
-
-      setIsPlaying(true);
-      const decodedData = decodeBase64(audioData);
-      const buffer = await decodeAudioData(decodedData, currentAudioContext, 1);
-      const source = currentAudioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(currentAudioContext.destination);
-      source.onended = () => { setIsPlaying(false); activeSource = null; };
-      activeSource = source;
-      source.start(0);
-    } catch (err) {
-      console.error(err);
-      setIsLoading(false);
-      setIsPlaying(false);
-      activeSource = null;
-    }
-  };
-
-  return (
-    <button onClick={handlePlay} className={`p-4 rounded-2xl transition-all flex items-center justify-center relative ${isPlaying ? 'bg-mira-orange text-white shadow-lg shadow-orange-200 scale-105' : 'bg-slate-50 text-slate-300 hover:bg-mira-orange-pastel hover:text-mira-orange active:scale-90'}`} title="Ouvir na minha língua">
-      {isLoading ? <Loader2 size={22} className="animate-spin" /> : isPlaying ? <div className="w-4 h-4 rounded-sm bg-white animate-pulse"></div> : <Volume2 size={22} />}
-    </button>
-  );
-}
+import { TranslatedText } from './TranslatedText';
 
 const getCategoryKey = (cat: string) => {
   switch (cat) {
@@ -196,6 +85,7 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   const [activeStory, setActiveStory] = useState<Post | null>(null);
   const [openPostMenu, setOpenPostMenu] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [translatedPosts, setTranslatedPosts] = useState<Set<string>>(new Set());
 
   const topStories = useMemo(() => {
     return [...masterPosts].sort((a, b) => {
@@ -400,8 +290,8 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   };
 
   const handleReportSubmit = async () => {
-    if (!reportForm.reason.trim() || !reportForm.name || !reportForm.email) {
-      showToast("Preencha todos os campos da denúncia.", "warning");
+    if (!reportForm.reason.trim()) {
+      showToast("Preencha o motivo da denúncia.", "warning");
       return;
     }
 
@@ -422,16 +312,9 @@ const CommunityView: React.FC<CommunityViewProps> = ({
         }));
       }
 
-      // Proactive Email Sync
-      await emailService.sendEmail('report', {
-        postId: reportingItem?.postId,
-        commentId: reportingItem?.commentId,
-        message: reportForm.reason
-      }, user);
-
       setReportingItem(null);
       setReportForm({ name: user.name || '', email: user.email || '', reason: '' });
-      showToast("Denúncia registada no DB e enviada para o canal seguro.", "success");
+      showToast("Denúncia enviada com sucesso para a Central de Moderação!", "success");
     } catch (e) {
       showToast("Erro ao enviar denúncia. Tenta novamente.", "error");
     }
@@ -490,7 +373,11 @@ const CommunityView: React.FC<CommunityViewProps> = ({
             <div className="relative z-10 bg-black/60 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/20 shadow-[0_0_50px_rgba(0,0,0,1)] max-w-sm w-full text-center max-h-[60vh] flex flex-col justify-center">
               <div className="overflow-y-auto no-scrollbar">
                 <p className="font-black text-white leading-tight tracking-tight uppercase drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] text-2xl">
-                  <TranslatedText text={activeStory.content} language={language} />
+                  <TranslatedText
+                    text={activeStory.content}
+                    language={language}
+                    shouldTranslate={translatedPosts.has(activeStory.id)}
+                  />
                 </p>
               </div>
             </div>
@@ -663,10 +550,40 @@ const CommunityView: React.FC<CommunityViewProps> = ({
                     <div className="bg-black/40 backdrop-blur-xl p-10 rounded-[3.5rem] border border-white/10 shadow-2xl max-w-[340px] w-full text-center max-h-[340px] flex flex-col justify-center transform transition-transform group-hover:-translate-y-1">
                       <div className="overflow-y-auto no-scrollbar">
                         <p className={`font-black text-white leading-tight tracking-tight uppercase break-words drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${fontSizeClass}`}>
-                          <TranslatedText text={post.content} language={language} />
+                          <TranslatedText
+                            text={post.content}
+                            language={language}
+                            shouldTranslate={translatedPosts.has(post.id)}
+                          />
                         </p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Translation toggle - pinned to the bottom of the image */}
+                  <div className="absolute bottom-5 left-0 right-0 z-20 flex justify-center">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTranslatedPosts(prev => {
+                          const next = new Set(prev);
+                          if (next.has(post.id)) next.delete(post.id);
+                          else next.add(post.id);
+                          return next;
+                        });
+                      }}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl border border-white/20 backdrop-blur-md active:scale-95 ${translatedPosts.has(post.id)
+                        ? 'bg-mira-yellow text-slate-900 shadow-yellow-200'
+                        : 'bg-white/90 text-slate-700 shadow-slate-200'
+                        }`}
+                    >
+                      <Sparkles size={12} className={translatedPosts.has(post.id) ? 'fill-slate-900 text-slate-900' : 'text-mira-orange'} />
+                      {translatedPosts.has(post.id) ? (
+                        language === 'PT' ? 'Ver Original' : language === 'EN' ? 'View Original' : language === 'ES' ? 'Ver Original' : 'Voir Original'
+                      ) : (
+                        language === 'PT' ? 'Traduzir 🌐' : language === 'EN' ? 'Translate 🌐' : language === 'ES' ? 'Traducir 🌐' : 'Traduire 🌐'
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -697,11 +614,6 @@ const CommunityView: React.FC<CommunityViewProps> = ({
                         <span className="text-[9px] font-black text-slate-800 tracking-tighter">{post.comments.length}</span>
                       </button>
 
-                      <div className="flex flex-col items-center gap-1.5 group transition-all">
-                        <VoicePlayButton text={post.content} language={language} />
-                        <span className="text-[9px] font-black text-slate-800 tracking-tighter">Ouvir</span>
-                      </div>
-
                       <button
                         onClick={() => onToggleSavePost(post.id)}
                         className="flex flex-col items-center gap-1.5 group active:scale-90 transition-all"
@@ -710,7 +622,7 @@ const CommunityView: React.FC<CommunityViewProps> = ({
                         <div className={`p-4 rounded-2xl transition-all ${isPostSaved ? 'bg-mira-blue text-white shadow-lg shadow-blue-200' : 'bg-slate-50 text-slate-300'}`}>
                           <Bookmark size={22} className={isPostSaved ? 'fill-white' : ''} />
                         </div>
-                        <span className="text-[9px] font-black text-slate-800 tracking-tighter opacity-0">.</span>
+                        <span className="text-[9px] font-black text-slate-800 tracking-tighter opacity-100">Salvar</span>
                       </button>
 
 
@@ -734,7 +646,11 @@ const CommunityView: React.FC<CommunityViewProps> = ({
                               </button>
                             </div>
                             <p className="text-sm text-slate-700 font-medium leading-relaxed break-words whitespace-pre-line">
-                              <TranslatedText text={comment.content} language={language} />
+                              {translatedPosts.has(post.id) ? (
+                                <span>{comment.content}</span>
+                              ) : (
+                                <TranslatedText text={comment.content} language={language} />
+                              )}
                             </p>
                             <div className="flex items-center gap-6 mt-4 pt-3 border-t border-slate-200/40">
                               <button onClick={() => handleLike(post.id, comment.id)} className={`flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-400 hover:text-red-500 transition-colors ${likedComments.has(comment.id) ? 'text-red-500 cursor-default' : ''}`}><Heart size={12} className={comment.likes > 0 ? 'fill-red-500 text-red-500' : ''} /> {comment.likes}</button>
@@ -785,27 +701,7 @@ const CommunityView: React.FC<CommunityViewProps> = ({
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Motivo da Denúncia</label>
                 <textarea placeholder="Explique o problema (Fraude, Ódio, Spam...)" value={reportForm.reason} onChange={e => setReportForm({ ...reportForm, reason: e.target.value })} className="w-full h-32 p-5 bg-slate-50 border-none rounded-2xl text-xs font-bold focus:ring-2 focus:ring-red-100 outline-none resize-none shadow-inner" />
               </div>
-              <button onClick={async () => {
-                try {
-                  await communityService.reportContent({
-                    postId: reportingItem.postId,
-                    commentId: reportingItem.commentId,
-                    userId: user.id,
-                    reason: reportForm.reason,
-                    email: reportForm.email
-                  });
-
-                  // Trigger mailto as requested
-                  const subject = encodeURIComponent(`DENÚNCIA MIRA: ${reportingItem.commentId ? 'Comentário' : 'Post'}`);
-                  const body = encodeURIComponent(`Denunciante: ${reportForm.name} (${reportForm.email})\nMotivo: ${reportForm.reason}\nID Conteúdo: ${reportingItem.commentId || reportingItem.postId}`);
-                  window.location.href = `mailto:mira.app@hotmail.com?subject=${subject}&body=${body}`;
-
-                  setReportingItem(null);
-                  alert("Denúncia enviada com sucesso!");
-                } catch (err) {
-                  alert("Erro ao enviar denúncia.");
-                }
-              }} className="w-full bg-red-600 text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all mt-4 hover:bg-red-700">
+              <button onClick={handleReportSubmit} className="w-full bg-red-600 text-white py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all mt-4 hover:bg-red-700">
                 Confirmar Denúncia
               </button>
             </div>

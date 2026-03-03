@@ -1,14 +1,13 @@
-
 import React, { useMemo, useState } from 'react';
 import { ViewType, User as UserType, Post, NotificationPreferences } from '../types';
 import {
   Briefcase, Map as MapIcon, FileText,
   Bell, HeartHandshake, Bot, ShieldCheck,
-  Heart, BookOpen, User, CheckCircle2, MessageSquare, Sparkles, ArrowRight, BellRing, X, ToggleLeft, ToggleRight, ShieldAlert, AlertTriangle, Activity, Scale, Newspaper, ShieldQuestion, LogOut, MessageCircle
+  Heart, BookOpen, User, CheckCircle2, MessageSquare, Sparkles, ArrowRight, BellRing, X, ToggleLeft, ToggleRight, ShieldAlert, AlertTriangle, Activity, Scale, Newspaper, ShieldQuestion, LogOut, MessageCircle, ChevronRight
 } from 'lucide-react';
 import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
-import { emailService } from '../services/emailService';
+import { supabase } from '../lib/supabase';
 
 interface HomeViewProps {
   user: UserType;
@@ -63,27 +62,18 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSuggestionSubmit = async () => {
-    if (!suggestionData.message) return;
+    if (!suggestionData.message || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { error } = await (window as any).supabase.from('app_suggestions').insert([{
-        user_id: user.id,
-        user_name: user.name,
-        user_email: user.email,
-        subject: suggestionData.subject,
-        message: suggestionData.message
-      }]);
-
-      if (error) throw error;
-
-      await emailService.sendEmail('suggestion', suggestionData, user);
+      const { submitReportRest } = await import('../services/reportService');
+      await submitReportRest('suggestion', `Assunto: ${suggestionData.subject || 'Geral'}\nMensagem: ${suggestionData.message}`);
 
       setShowSuggestionModal(false);
       setSuggestionData({ subject: '', message: '' });
-      alert("Enviado com sucesso! A abrir o seu email para confirmação final...");
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao registar sugestão.");
+      alert("✅ Sugestão enviada com sucesso! Pode ver na Central de Moderação.");
+    } catch (err: any) {
+      console.error('handleSuggestionSubmit error:', err);
+      alert(`Erro ao registar sugestão: ${err?.message || 'Tente novamente.'}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -202,7 +192,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
         {/* ECOSYSTEM Grid */}
         <section>
           <div className="flex items-center justify-between mb-8 px-2">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">ECOSSISTEMA MIRA</h3>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">{t('home_ecosystem', language)}</h3>
           </div>
           <div className="grid grid-cols-2 gap-5">
             {quickAccess.map((item) => (
@@ -211,15 +201,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
                 <p className="font-black text-slate-900 text-xs tracking-tight uppercase group-hover:text-mira-orange">{item.label}</p>
               </button>
             ))}
-            <button
-              onClick={() => setShowSuggestionModal(true)}
-              className="bg-slate-900 p-8 rounded-[3rem] border border-slate-800 shadow-xl hover:shadow-2xl transition-all text-center group active:scale-95 flex flex-col items-center justify-center text-white"
-            >
-              <div className="w-16 h-16 rounded-[1.5rem] bg-white/10 flex items-center justify-center mb-4 transition-all group-hover:scale-110 shadow-sm text-mira-orange">
-                <MessageSquare size={32} />
-              </div>
-              <p className="font-black text-white text-xs tracking-tight uppercase group-hover:text-mira-orange">Sugerir Melhorias</p>
-            </button>
           </div>
         </section>
 
@@ -227,10 +208,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
         <section>
           <div className="flex justify-between items-end mb-8 px-2">
             <div>
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">COMUNIDADE</h3>
-              <p className="text-2xl font-black text-slate-900 tracking-tighter mt-1">Populares no MIRA</p>
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">{t('home_community', language)}</h3>
+              <p className="text-2xl font-black text-slate-900 tracking-tighter mt-1">{t('home_popular_title', language)}</p>
             </div>
-            <button onClick={() => onViewChange(ViewType.COMMUNITY)} className="text-[10px] font-black text-mira-blue uppercase tracking-widest px-6 py-2.5 bg-mira-blue-pastel rounded-2xl transition-all shadow-sm active:scale-95">Ver Tudo</button>
+            <button onClick={() => onViewChange(ViewType.COMMUNITY)} className="text-[10px] font-black text-mira-blue uppercase tracking-widest px-6 py-2.5 bg-mira-blue-pastel rounded-2xl transition-all shadow-sm active:scale-95">{t('home_see_all', language)}</button>
           </div>
           <div className="grid grid-cols-1 gap-8">
             {relevantPosts.map(post => (
@@ -249,16 +230,35 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
           </div>
         </section>
 
-        {/* Rights Reserved Footer */}
-        <footer className="pt-12 pb-20 border-t border-slate-50 text-center space-y-4">
-          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">
-            MIRA - COPYWRITE 2026, Amanda Silva Abreu.
-          </p>
-          <div className="flex justify-center gap-6">
-            <button onClick={() => onViewChange(ViewType.PRIVACY)} className="text-[8px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Políticas & Jurídico</button>
-            <button className="text-[8px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600">Termos de Uso</button>
+        <div className="mt-8 mb-4">
+          <button
+            onClick={() => setShowSuggestionModal(true)}
+            className="w-full bg-mira-orange/10 border-2 border-dashed border-mira-orange/30 p-8 rounded-[3rem] flex items-center justify-between group hover:bg-mira-orange/20 transition-all active:scale-95"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-mira-orange text-white rounded-2xl shadow-lg">
+                <Sparkles size={24} className="animate-pulse" />
+              </div>
+              <div className="text-left">
+                <p className="font-black text-slate-900 text-sm uppercase tracking-tight">{t('home_suggest_improvements', language)}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ajudar a crescer o MIRA</p>
+              </div>
+            </div>
+            <div className="p-3 bg-white rounded-xl text-mira-orange shadow-sm border border-slate-100 group-hover:translate-x-1 transition-transform">
+              <ChevronRight size={20} />
+            </div>
+          </button>
+        </div>
+
+        <div className="flex flex-col items-center gap-6">
+          <div className="flex justify-center gap-8">
+            <button onClick={() => onViewChange(ViewType.PRIVACY)} className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-mira-orange transition-colors">{t('home_legal_policy', language)}</button>
+            <button className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-mira-orange transition-colors">{t('home_terms', language)}</button>
           </div>
-        </footer>
+          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">
+            {t('home_copyright', language)}
+          </p>
+        </div>
       </div>
       {/* SUGGESTION MODAL */}
       {showSuggestionModal && (
@@ -270,8 +270,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
                   <Sparkles size={24} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Sugerir Melhoria</h3>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">A sua voz faz o MIRA crescer</p>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{t('home_suggestion_title', language)}</h3>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{t('home_suggestion_subtitle', language)}</p>
                 </div>
               </div>
               <button onClick={() => setShowSuggestionModal(false)} className="p-2 hover:bg-slate-50 rounded-full transition-colors"><X size={24} /></button>
@@ -279,7 +279,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
 
             <div className="space-y-4">
               <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Assunto</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">{t('home_subject', language)}</label>
                 <input
                   type="text"
                   value={suggestionData.subject}
@@ -289,7 +289,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
                 />
               </div>
               <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Descrição</label>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">{t('home_description', language)}</label>
                 <textarea
                   value={suggestionData.message}
                   onChange={e => setSuggestionData({ ...suggestionData, message: e.target.value })}
@@ -302,7 +302,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
                 disabled={!suggestionData.message || isSubmitting}
                 className="w-full bg-mira-orange text-white py-6 rounded-[2rem] font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-orange-100 active:scale-95 transition-all mt-4 disabled:opacity-30"
               >
-                {isSubmitting ? 'A ENVIAR...' : 'Enviar Sugestão'}
+                {isSubmitting ? t('home_sending', language) : t('home_send_suggestion', language)}
               </button>
             </div>
           </div>

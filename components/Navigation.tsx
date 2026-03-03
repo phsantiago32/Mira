@@ -15,7 +15,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange, lang
     { id: ViewType.HOME, label: t('nav_home', language), icon: Home },
     { id: ViewType.COMMUNITY, label: t('nav_community', language), icon: HeartHandshake },
     { id: ViewType.JOBS, label: t('nav_vagas', language), icon: Briefcase },
-    { id: ViewType.MAP, label: 'Serviços', icon: Building2 },
+    { id: ViewType.MAP, label: t('nav_map', language), icon: Building2 },
     { id: ViewType.DOCUMENTS, label: t('nav_docs', language), icon: FileText },
   ];
 

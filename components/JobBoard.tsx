@@ -5,6 +5,7 @@ import { Search, Briefcase, ExternalLink, MapPin, Building2, TrendingUp, Chevron
 import { analytics } from '../services/analyticsService';
 import { supabase } from '../lib/supabase';
 import { t } from '../utils/translations';
+import { PROTECTED_JOBS } from '../utils/protectedData';
 import { audioService } from '../services/audioService';
 
 interface JobBoardProps {
@@ -35,7 +36,7 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchJobs = async (retries = 3) => {
+  const fetchJobs = async () => {
     setLoading(true);
     setError(null);
 
@@ -46,7 +47,7 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setJobs(parsed);
-          setLoading(false); // Can show cached data early
+          setLoading(false); // Immediate display!
           console.log("MIRA: Rehydrated Jobs from localStorage");
         }
       } catch (e) { }
@@ -54,12 +55,10 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
 
     try {
       const { data, error } = await supabase.from('job_posts').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
 
-      console.log("MIRA: Vagas recebidas do DB:", data?.length || 0);
-
-      if (data && data.length > 0) {
-        const formattedJobs: JobPost[] = data.map(dbJob => ({
+      let formattedJobs: JobPost[] = [];
+      if (!error && data && data.length > 0) {
+        formattedJobs = data.map(dbJob => ({
           id: dbJob.id,
           title: dbJob.title || 'Sem título',
           location: dbJob.location || 'Portugal',
@@ -70,20 +69,33 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
           category: dbJob.category || 'Emprego e Formação',
           workTopic: dbJob.work_topic || 'Outros'
         }));
-        setJobs(formattedJobs);
-        localStorage.setItem('mira_jobs_cache', JSON.stringify(formattedJobs));
-      } else {
-        if (retries > 0) {
-          console.warn(`MIRA: Nenhuma vaga encontrada, tentando novamente... (${retries})`);
-          setTimeout(() => fetchJobs(retries - 1), 1000);
-        }
       }
+
+      // ALWAYS ensure protected jobs are included at the end or top
+      const finalJobs = [...formattedJobs];
+      PROTECTED_JOBS.forEach(pj => {
+        if (!finalJobs.some(j => j.id === pj.id || j.title === pj.title)) {
+          finalJobs.push(pj);
+        }
+      });
+
+      setJobs(finalJobs);
+      localStorage.setItem('mira_jobs_cache', JSON.stringify(finalJobs));
+
     } catch (err: any) {
       console.error("MIRA Exception in JobBoard:", err);
-      setError(err.message || 'Falha na conexão');
-      if (retries > 0) setTimeout(() => fetchJobs(retries - 1), 2000);
+      // Fallback
+      setJobs(prev => {
+        const base = prev.length > 0 ? [...prev] : [];
+        PROTECTED_JOBS.forEach(pj => {
+          if (!base.some(j => j.id === pj.id || j.title === pj.title)) {
+            base.push(pj);
+          }
+        });
+        return base;
+      });
     } finally {
-      setLoading(false);
+      setLoading(false); // Only end loading if it wasn't already stopped by cache
     }
   };
 
@@ -100,10 +112,10 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
   });
 
   return (
-    <div className="h-full bg-white flex flex-col pb-24 overflow-hidden">
+    <div className="min-h-screen bg-white flex flex-col pb-24">
       {/* Header Sticky Section */}
       <div className="bg-white px-6 pt-8 pb-4 space-y-6 z-30 border-b border-slate-50">
-        <div className="flex items-start justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">{t('jobs_title', language)}</h2>
             <div className="flex items-center gap-2">
@@ -114,14 +126,14 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
           <button
             onClick={() => fetchJobs()}
             disabled={loading}
-            className="p-3 bg-slate-50 text-slate-400 hover:text-mira-orange hover:bg-mira-orange-pastel rounded-2xl transition-all active:rotate-180 duration-500"
+            className="p-3 bg-slate-50 text-slate-400 hover:text-mira-orange hover:bg-mira-orange-pastel rounded-2xl transition-all active:rotate-180 duration-500 w-full sm:w-auto flex justify-center shrink-0"
             title="Sincronizar Vagas"
           >
             <RefreshCcw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full sm:w-auto">
             <button
               onClick={() => setActiveTab('jobs')}
               className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'jobs' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}
@@ -144,7 +156,7 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
           }}
           className="w-full bg-mira-blue text-white py-4 px-6 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-3 shadow-xl hover:bg-black transition-all active:scale-95"
         >
-          <FileText size={18} /> Criar o teu currículo EuroPass (Oficial UE)
+          <FileText size={18} /> {t('jobs_create_cv', language)}
         </button>
 
         {activeTab === 'jobs' && (
@@ -185,12 +197,6 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
                   {WORK_TOPICS.map(topic => (
                     <option key={topic} value={topic}>{topic}</option>
                   ))}
-                  <option value="Administrativo">Administrativo</option>
-                  <option value="Logística">Logística</option>
-                  <option value="Restauração">Restauração</option>
-                  <option value="Saúde">Saúde</option>
-                  <option value="Tecnologia">Tecnologia</option>
-                  <option value="Técnico">Técnico</option>
                 </select>
                 <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
@@ -200,7 +206,7 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 space-y-6 no-scrollbar pb-10 mt-4">
+      <div className="px-6 space-y-6 pb-10 mt-4">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-6 animate-pulse">
             <div className="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-200">
@@ -261,16 +267,6 @@ export const JobBoard: React.FC<JobBoardProps> = ({ language, isAdmin }) => {
                       <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
                         {t('jobs_published_ago', language)} {job.datePosted}
                       </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          audioService.speak(`${job.title}. ${job.sourceName} em ${job.location}.`, language);
-                        }}
-                        className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-mira-orange-pastel hover:text-mira-orange transition-all active:scale-90"
-                        title="Ouvir descrição"
-                      >
-                        <Volume2 size={14} />
-                      </button>
                     </div>
                     <div className="bg-slate-900 text-white p-2.5 rounded-xl group-hover:bg-mira-orange transition-colors">
                       <ExternalLink size={16} />
