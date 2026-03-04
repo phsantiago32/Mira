@@ -27,6 +27,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
     const [isSyncing, setIsSyncing] = useState(false);
     const [newKnowledge, setNewKnowledge] = useState({ topic: '', information: '', category: '', source: '' });
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+    const [processing, setProcessing] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -45,6 +46,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                 const suggs = await adminService.fetchSuggestions();
                 const comps = await adminService.fetchComplaints();
                 const commReports = await adminService.fetchCommunityReports();
+                console.log("Reports fetched:", commReports);
                 setSuggestions(suggs);
                 setComplaints(comps);
                 setCommunityReports(commReports);
@@ -59,13 +61,18 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
         }
     };
 
-    const handleAction = async (action: () => Promise<void>) => {
+    const handleAction = async (action: () => Promise<void>, actionId?: string) => {
+        if (processing) return;
+        if (actionId) setProcessing(actionId);
         try {
             await action();
             setMessage({ text: 'Operação realizada com sucesso!', type: 'success' });
-            loadData();
+            await loadData();
         } catch (err: any) {
+            console.error("Admin Action Error:", err);
             setMessage({ text: err.message || 'Erro na operação', type: 'error' });
+        } finally {
+            setProcessing(null);
         }
         setTimeout(() => setMessage(null), 3000);
     };
@@ -151,6 +158,15 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
+                                            {u.email && (
+                                                <button
+                                                    onClick={() => handleAction(() => adminService.blockEmail(u.email!))}
+                                                    className="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm"
+                                                    title="Bloquear Email de registrar novamente"
+                                                >
+                                                    <MailX size={18} />
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => handleAction(() => adminService.toggleBlockUser(u.id, !u.isBlocked))}
                                                 className={`p-3 rounded-xl transition-all ${u.isBlocked ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-500 shadow-sm'}`}
@@ -278,12 +294,17 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                                 </div>
 
                                                 <div className="flex flex-col gap-2 relative z-10 mt-2">
-                                                    <button onClick={() => {
-                                                        if (window.confirm("ATENÇÃO: Clicou no Lixo.\nIsto irá DELETAR PERMANENTEMENTE o post/comentário relatado e fechará esta denúncia. Tem a certeza?")) {
-                                                            handleAction(() => adminService.adminDeleteReportedContent(r));
-                                                        }
-                                                    }} className="w-full flex justify-center items-center gap-2 py-3 bg-red-500 text-white hover:bg-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
-                                                        <Trash2 size={14} /> DELETAR CONTEÚDO PERMANENTEMENTE
+                                                    <button
+                                                        disabled={processing === r.id}
+                                                        onClick={() => {
+                                                            if (window.confirm("ATENÇÃO: Clicou no Lixo.\nIsto irá DELETAR PERMANENTEMENTE o post/comentário relatado e fechará esta denúncia. Tem a certeza?")) {
+                                                                handleAction(() => adminService.adminDeleteReportedContent(r), r.id);
+                                                            }
+                                                        }}
+                                                        className={`w-full flex justify-center items-center gap-2 py-3 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${processing === r.id ? 'opacity-50 cursor-wait' : 'hover:bg-red-600 active:scale-[0.98]'}`}
+                                                    >
+                                                        {processing === r.id ? <RefreshCcw size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                                                        {processing === r.id ? 'A ELIMINAR...' : 'DELETAR CONTEÚDO PERMANENTEMENTE'}
                                                     </button>
                                                 </div>
                                             </div>

@@ -1,0 +1,80 @@
+[
+  {
+    "tablename": "chat_messages"
+  },
+  {
+    "tablename": "document_templates"
+  },
+  {
+    "tablename": "activity_logs"
+  },
+  {
+    "tablename": "profiles"
+  },
+  {
+    "tablename": "user_preferences"
+  },
+  {
+    "tablename": "posts"
+  },
+  {
+    "tablename": "post_votes"
+  },
+  {
+    "tablename": "badges"
+  },
+  {
+    "tablename": "user_badges"
+  },
+  {
+    "tablename": "community_reports"
+  },
+  {
+    "tablename": "saved_posts"
+  },
+  {
+    "tablename": "comment_likes"
+  },
+  {
+    "tablename": "spatial_ref_sys"
+  },
+  {
+    "tablename": "courses"
+  },
+  {
+    "tablename": "job_posts"
+  },
+  {
+    "tablename": "service_ratings"
+  },
+  {
+    "tablename": "denied_emails"
+  },
+  {
+    "tablename": "user_documents"
+  },
+  {
+    "tablename": "map_alerts"
+  },
+  {
+    "tablename": "document_tasks"
+  },
+  {
+    "tablename": "service_reports"
+  },
+  {
+    "tablename": "comments"
+  },
+  {
+    "tablename": "chat_sessions"
+  },
+  {
+    "tablename": "app_suggestions"
+  },
+  {
+    "tablename": "suggestions"
+  },
+  {
+    "tablename": "reports"
+  }
+]

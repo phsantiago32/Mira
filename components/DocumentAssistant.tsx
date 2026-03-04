@@ -110,13 +110,27 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
             });
 
             setGeneratedFile({
-                save: (n: string) => {
+                save: (filename: string) => {
+                    const finalName = filename.toLowerCase().endsWith('.pdf') ? filename : filename + '.pdf';
+                    console.log("Forcing robust PDF download:", finalName);
+
                     try {
-                        const finalName = n.toLowerCase().endsWith('.pdf') ? n : n + '.pdf';
-                        pdfResult.doc.save(finalName);
+                        const link = document.createElement('a');
+                        link.href = pdfResult.pdfUrl;
+                        link.download = finalName;
+                        link.target = '_blank'; // Prevenção para alguns browsers Mobile
+                        document.body.appendChild(link);
+                        link.click();
+
+                        // Pequeno delay antes de remover o link da DOM
+                        setTimeout(() => {
+                            if (document.body.contains(link)) {
+                                document.body.removeChild(link);
+                            }
+                        }, 100);
                     } catch (e) {
-                        console.error("Download falhou, a abrir em nova aba", e);
-                        window.open(pdfResult.pdfUrl, '_blank');
+                        console.error("Link download failed, falling back to jspdf save", e);
+                        pdfResult.doc.save(finalName);
                     }
                 },
                 filename: pdfResult.filename,
@@ -140,6 +154,17 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    // Função auxiliar para download ultra-robusto
+    const handleDownload = () => {
+        if (!generatedFile || !generatedFile.save) {
+            alert('Ficheiro não encontrado. Por favor, gere o documento novamente.');
+            return;
+        }
+
+        const filename = generatedFile.filename || 'documento_mira.pdf';
+        generatedFile.save(filename);
     };
 
     return (
@@ -337,7 +362,16 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                     <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{t('docs_ready', language)}</h2>
                     <p className="text-sm text-slate-500 font-bold mb-10 max-w-xs leading-relaxed uppercase">O seu documento oficial foi formatado respeitando as normas da AIMA.</p>
                     <div className="w-full max-w-xs space-y-4">
-                        <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); if (generatedFile && generatedFile.save) { generatedFile.save(generatedFile.filename); } else { alert('Erro: ficheiro não encontrado. Gere novamente.'); } }} className="w-full bg-slate-900 text-white py-5 rounded-[2.5rem] font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-xl"><Download size={20} /> {t('docs_download', language)}</button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleDownload();
+                            }}
+                            className="w-full bg-slate-900 text-white py-5 rounded-[2.5rem] font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-xl"
+                        >
+                            <Download size={20} /> {t('docs_download', language)}
+                        </button>
                         <button onClick={() => setActiveScreen('gallery')} className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">{t('docs_back', language)}</button>
                     </div>
                 </div>

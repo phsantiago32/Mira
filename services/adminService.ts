@@ -133,8 +133,16 @@ export const adminService = {
      * Manage Suggestions & Complaints
      */
     async fetchSuggestions() {
-        const { data: oldData, error: e1 } = await supabase.from('suggestions').select('*, profiles(name)').order('created_at', { ascending: false });
-        const { data: newData, error: e2 } = await supabase.from('reports').select('*').eq('type', 'suggestion').order('created_at', { ascending: false });
+        const { data: oldData } = await supabase.from('app_suggestions').select('*, profiles(name)').order('created_at', { ascending: false });
+        const { data: newData } = await supabase.from('reports').select('*').eq('type', 'suggestion').order('created_at', { ascending: false });
+
+        const mappedOld = (oldData || []).map(r => ({
+            id: r.id,
+            profiles: { name: r.profiles?.name || 'Membro' },
+            subject: 'Feedback de Usuário',
+            content: r.suggestion || r.content || '',
+            created_at: r.created_at
+        }));
 
         const mappedNew = (newData || []).map(r => ({
             id: r.id,
@@ -144,12 +152,20 @@ export const adminService = {
             created_at: r.created_at
         }));
 
-        return [...(oldData || []), ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return [...mappedOld, ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
 
     async fetchComplaints() {
-        const { data: oldData } = await supabase.from('complaints').select('*, profiles(name)').order('created_at', { ascending: false });
+        const { data: oldData } = await supabase.from('service_reports').select('*, profiles(name)').order('created_at', { ascending: false });
         const { data: newData } = await supabase.from('reports').select('*').eq('type', 'service_queue').order('created_at', { ascending: false });
+
+        const mappedOld = (oldData || []).map(r => ({
+            id: r.id,
+            profiles: { name: r.profiles?.name || 'Membro' },
+            subject: r.service_name || 'Relato de Serviço',
+            content: r.report_text || r.content || '',
+            created_at: r.created_at
+        }));
 
         const mappedNew = (newData || []).map(r => ({
             id: r.id,
@@ -159,17 +175,24 @@ export const adminService = {
             created_at: r.created_at
         }));
 
-        return [...(oldData || []), ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return [...mappedOld, ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
 
     async deleteSuggestion(id: string) {
-        await supabase.from('suggestions').delete().eq('id', id);
-        await supabase.from('reports').delete().eq('id', id);
+        await supabase.from('app_suggestions').delete().eq('id', id);
+        const { error } = await supabase.from('reports').delete().eq('id', id);
+        if (error && error.code !== '42P01') {
+            // Ignorar caso não seja a tabela relacional. Se report teve erro, logamos.
+            console.log("Delete report error or not found", error);
+        }
     },
 
     async deleteComplaint(id: string) {
-        await supabase.from('complaints').delete().eq('id', id);
-        await supabase.from('reports').delete().eq('id', id);
+        await supabase.from('service_reports').delete().eq('id', id);
+        const { error } = await supabase.from('reports').delete().eq('id', id);
+        if (error && error.code !== '42P01') {
+            console.log("Delete report error or not found", error);
+        }
     },
 
     async fetchCommunityReports() {
@@ -177,6 +200,20 @@ export const adminService = {
             .from('community_reports')
             .select('*, profiles:user_id(name), posts:post_id(content), comments:comment_id(content)')
             .order('created_at', { ascending: false });
+
+        const mappedOld = (oldData || []).map(r => ({
+            id: r.id,
+            profiles: { name: r.profiles?.name || 'Membro' },
+            reporter_email: '',
+            reason: r.reason || 'Denúncia da Comunidade',
+            post_id: r.post_id,
+            comment_id: r.comment_id,
+            is_post_type: r.post_id ? true : false,
+            posts: r.posts,
+            comments: r.comments,
+            reported_content_text: (r.posts && r.posts.content) ? r.posts.content : ((r.comments && r.comments.content) ? r.comments.content : 'Conteúdo restrito.'),
+            created_at: r.created_at
+        }));
 
         const { data: newData } = await supabase.from('reports').select('*').in('type', ['post_report', 'comment_report']).order('created_at', { ascending: false });
 
@@ -186,7 +223,6 @@ export const adminService = {
             const match = r.content?.match(/ID:\s*([a-zA-Z0-9-]+)/);
             if (match) targetId = match[1];
 
-            // Fetch missing content for better admin view
             let contentRef = 'Conteúdo Restrito/Apagado';
             if (targetId) {
                 if (isPost) {
@@ -200,18 +236,19 @@ export const adminService = {
 
             return {
                 id: r.id,
-                profiles: { name: 'REST Form' },
+                profiles: { name: 'Membro MIRA' },
                 reporter_email: '',
                 reason: r.content,
                 post_id: targetId,
                 is_post_type: isPost, // hidden field to determine table
                 posts: isPost ? { content: contentRef } : null,
                 comments: !isPost ? { content: contentRef } : null,
+                reported_content_text: contentRef,
                 created_at: r.created_at
             };
         }));
 
-        return [...(oldData || []), ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return [...mappedOld, ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
 
     async deleteCommunityReport(id: string) {
@@ -220,8 +257,7 @@ export const adminService = {
     },
 
     async adminDeleteReportedContent(r: any) {
-        // Determinar ID real
-        let targetId = r.post_id;
+        let targetId = r.post_id || r.comment_id;
         let isPost = r.is_post_type !== undefined ? r.is_post_type : (r.posts != null);
 
         if (!targetId && typeof r.reason === 'string') {
@@ -229,15 +265,20 @@ export const adminService = {
             if (match) targetId = match[1];
         }
 
+        // Deletar o conteúdo ofensivo
         if (targetId) {
-            if (isPost) {
-                await supabase.from('posts').delete().eq('id', targetId);
-            } else {
-                await supabase.from('comments').delete().eq('id', targetId);
+            const table = isPost ? 'posts' : 'comments';
+            console.log("Admin action: deleting from", table, "with ID:", targetId);
+            const { error: e1 } = await supabase.from(table).delete().eq('id', targetId);
+            if (e1) {
+                console.error(`Failed to delete from ${table}:`, e1);
+                throw new Error(`Erro ao apagar conteúdo: ${e1.message}`);
             }
         }
 
-        await this.deleteCommunityReport(r.id);
+        // Deletar o histórico da denúncia em si
+        await supabase.from('community_reports').delete().eq('id', r.id);
+        await supabase.from('reports').delete().eq('id', r.id);
     },
 
     /**

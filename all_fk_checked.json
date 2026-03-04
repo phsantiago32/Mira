@@ -1,0 +1,98 @@
+[
+  {
+    "constraint_name": "user_preferences_user_id_fkey",
+    "table_name": "user_preferences",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "posts_author_id_fkey",
+    "table_name": "posts",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "comments_post_id_fkey",
+    "table_name": "comments",
+    "foreign_table_name": "posts",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "comments_author_id_fkey",
+    "table_name": "comments",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "post_votes_post_id_fkey",
+    "table_name": "post_votes",
+    "foreign_table_name": "posts",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "post_votes_user_id_fkey",
+    "table_name": "post_votes",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "user_badges_user_id_fkey",
+    "table_name": "user_badges",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "saved_posts_user_id_fkey",
+    "table_name": "saved_posts",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "saved_posts_post_id_fkey",
+    "table_name": "saved_posts",
+    "foreign_table_name": "posts",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "service_ratings_user_id_fkey",
+    "table_name": "service_ratings",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "chat_sessions_user_id_fkey",
+    "table_name": "chat_sessions",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "user_documents_user_id_fkey",
+    "table_name": "user_documents",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "document_tasks_user_id_fkey",
+    "table_name": "document_tasks",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "activity_logs_user_id_fkey",
+    "table_name": "activity_logs",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "community_reports_post_id_fkey",
+    "table_name": "community_reports",
+    "foreign_table_name": "posts",
+    "confdeltype": "c"
+  },
+  {
+    "constraint_name": "comment_likes_user_id_fkey",
+    "table_name": "comment_likes",
+    "foreign_table_name": "profiles",
+    "confdeltype": "c"
+  }
+]

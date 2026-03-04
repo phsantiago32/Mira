@@ -95,7 +95,15 @@ export async function generateOfficialPDF(templateTitle: string, data: Record<st
   doc.setFont('helvetica', 'normal');
   doc.text('MIRA APP © 2026 - DOCUMENTO PARA INSTRUÇÃO DE PROCESSO ADMINISTRATIVO', pageWidth / 2, footerY, { align: 'center' });
 
-  const blob = doc.output('blob');
+  // Gera o PDF como Blob (Nativo do jsPDF v2)
+  let blob: Blob;
+  try {
+    blob = doc.output('blob');
+  } catch (e) {
+    console.error("Critical: PDF generation failed entirely", e);
+    throw new Error("Não foi possível gerar os dados binários do PDF.");
+  }
+
   const url = URL.createObjectURL(blob);
 
   // Nome do arquivo mais seguro (slugify)

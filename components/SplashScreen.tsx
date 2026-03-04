@@ -15,6 +15,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     const [fadeOut, setFadeOut] = useState(false);
     const [isMuted, setIsMuted] = useState(false); // Áudio ativado por padrão
     const videoRef = useRef<HTMLVideoElement>(null);
+    const hasStartedFadeOut = useRef(false);
+
+    const triggerFadeOut = () => {
+        if (hasStartedFadeOut.current) return;
+        hasStartedFadeOut.current = true;
+        setFadeOut(true);
+        setTimeout(onFinish, 300); // 300ms para a transição ser bem rápida
+    };
 
     useEffect(() => {
         // Tenta contornar bloqueios de auto-play forçando o play após mount
@@ -28,17 +36,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
         }
 
         // 8 seconds timer for the video duration
-        const timer = setTimeout(() => {
-            setFadeOut(true);
-            // Extra 500ms for the CSS fade-out transition
-            setTimeout(onFinish, 800);
-        }, 8000);
+        const timer = setTimeout(triggerFadeOut, 8000);
 
         return () => clearTimeout(timer);
     }, [onFinish]);
 
     return (
-        <div className={`fixed inset-0 z-[2000] bg-black flex items-center justify-center transition-opacity duration-1000 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-[2000] bg-black flex items-center justify-center transition-opacity duration-300 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
             <div className="relative w-full h-[100dvh] bg-black overflow-hidden flex items-center justify-center">
                 <video
                     ref={videoRef}
@@ -46,7 +50,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                     playsInline
                     muted={isMuted}
                     className="w-full h-full object-cover" // object-cover para não ter bordas pretas, adaptativo.
-                    onEnded={() => setFadeOut(true)}
+                    onEnded={triggerFadeOut}
                 >
                     <source src="/splash_video.mp4" type="video/mp4" />
                     Your browser does not support the video tag.

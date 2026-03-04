@@ -1,0 +1,135 @@
+[
+  {
+    "tablename": "comments",
+    "policyname": "comments: delete",
+    "cmd": "DELETE",
+    "qual": "(( SELECT auth.uid() AS uid) = author_id)",
+    "with_check": null
+  },
+  {
+    "tablename": "comments",
+    "policyname": "comments: insert",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(( SELECT auth.uid() AS uid) = author_id)"
+  },
+  {
+    "tablename": "comments",
+    "policyname": "comments: select",
+    "cmd": "SELECT",
+    "qual": "(( SELECT auth.uid() AS uid) IS NOT NULL)",
+    "with_check": null
+  },
+  {
+    "tablename": "community_reports",
+    "policyname": "Only admins can see reports",
+    "cmd": "SELECT",
+    "qual": "(EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'admin'::user_role))))",
+    "with_check": null
+  },
+  {
+    "tablename": "community_reports",
+    "policyname": "Users can create reports",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(auth.uid() = user_id)"
+  },
+  {
+    "tablename": "community_reports",
+    "policyname": "community_reports_insert_anon",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "tablename": "community_reports",
+    "policyname": "community_reports_insert_auth",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "tablename": "community_reports",
+    "policyname": "community_reports_select_auth",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "tablename": "posts",
+    "policyname": "posts: delete",
+    "cmd": "DELETE",
+    "qual": "((( SELECT auth.uid() AS uid) = author_id) OR (EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = ( SELECT auth.uid() AS uid)) AND (profiles.role = 'admin'::user_role)))))",
+    "with_check": null
+  },
+  {
+    "tablename": "posts",
+    "policyname": "posts: insert",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(( SELECT auth.uid() AS uid) = author_id)"
+  },
+  {
+    "tablename": "posts",
+    "policyname": "posts: select",
+    "cmd": "SELECT",
+    "qual": "(( SELECT auth.uid() AS uid) IS NOT NULL)",
+    "with_check": null
+  },
+  {
+    "tablename": "posts",
+    "policyname": "posts: update",
+    "cmd": "UPDATE",
+    "qual": "((( SELECT auth.uid() AS uid) = author_id) OR (EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = ( SELECT auth.uid() AS uid)) AND (profiles.role = 'admin'::user_role)))))",
+    "with_check": null
+  },
+  {
+    "tablename": "profiles",
+    "policyname": "profiles: insert",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "(auth.uid() = id)"
+  },
+  {
+    "tablename": "profiles",
+    "policyname": "profiles: select",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "tablename": "profiles",
+    "policyname": "profiles: update",
+    "cmd": "UPDATE",
+    "qual": "(( SELECT auth.uid() AS uid) = id)",
+    "with_check": null
+  },
+  {
+    "tablename": "suggestions",
+    "policyname": "suggestions_insert_anon",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "tablename": "suggestions",
+    "policyname": "suggestions_insert_auth",
+    "cmd": "INSERT",
+    "qual": null,
+    "with_check": "true"
+  },
+  {
+    "tablename": "suggestions",
+    "policyname": "suggestions_select_all_auth",
+    "cmd": "SELECT",
+    "qual": "true",
+    "with_check": null
+  },
+  {
+    "tablename": "suggestions",
+    "policyname": "suggestions_select_own_or_admin",
+    "cmd": "SELECT",
+    "qual": "(user_id = auth.uid())",
+    "with_check": null
+  }
+]
