@@ -46,48 +46,23 @@ export const audioService = {
             const voices = window.speechSynthesis.getVoices();
             if (voices.length > 0) {
                 let preferredVoice;
+                const maleKeywords = ['antonio', 'lido', 'denis', 'rafael', 'miguel', 'rui', 'paul', 'henri', 'andrew', 'brian', 'guy', 'masculino', 'male', 'man'];
 
-                // If the user manually selected a specific voice
-                if (voiceURI) {
-                    preferredVoice = voices.find(v => v.voiceURI === voiceURI);
+                // Enforce premium male, young friendly voice
+                preferredVoice = voices.find(v => {
+                    if (!v.lang.startsWith(targetLocale.split('-')[0])) return false;
+                    const isPremium = v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Premium') || v.name.includes('Google') || v.name.includes('Microsoft');
+                    const isMale = maleKeywords.some(kw => v.name.toLowerCase().includes(kw));
+                    return isPremium && isMale;
+                });
+
+                // Ultimate fallback strictly to the locale
+                if (!preferredVoice) {
+                    preferredVoice = voices.find(v => v.lang.startsWith(targetLocale.split('-')[0]) && maleKeywords.some(kw => v.name.toLowerCase().includes(kw)));
                 }
 
                 if (!preferredVoice) {
-                    const maleKeywords = ['antonio', 'antónio', 'dinis', 'julio', 'júlio', 'rafael', 'miguel', 'rui', 'masculino', 'male', 'man'];
-
-                    // First try to find a natural/online voice for the target locale, preferably male
-                    preferredVoice = voices.find(v => {
-                        if (!v.lang.startsWith(targetLocale.split('-')[0])) return false;
-                        const isPremium = v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Premium') || v.name.includes('Google') || v.name.includes('Microsoft');
-                        const isMale = maleKeywords.some(kw => v.name.toLowerCase().includes(kw));
-                        return isPremium && isMale;
-                    });
-
-                    // If no premium male, try any male
-                    if (!preferredVoice) {
-                        preferredVoice = voices.find(v =>
-                            v.lang.startsWith(targetLocale.split('-')[0]) &&
-                            maleKeywords.some(kw => v.name.toLowerCase().includes(kw))
-                        );
-                    }
-
-                    // Fallback to premium voices even if not strictly male
-                    if (!preferredVoice) {
-                        preferredVoice = voices.find(v =>
-                            v.lang.startsWith(targetLocale.split('-')[0]) &&
-                            (v.name.includes('Natural') || v.name.includes('Neural') || v.name.includes('Premium') || v.name.includes('Google') || v.name.includes('Microsoft'))
-                        );
-                    }
-
-                    // If PT and no good PT voice, fallback to pt-BR which often has better default voices
-                    if (!preferredVoice && lang === 'PT') {
-                        preferredVoice = voices.find(v => v.lang === 'pt-BR' && (v.name.includes('Google') || v.name.includes('Microsoft')));
-                    }
-
-                    // Ultimate fallback to anything in that language
-                    if (!preferredVoice) {
-                        preferredVoice = voices.find(v => v.lang.startsWith(targetLocale.split('-')[0]));
-                    }
+                    preferredVoice = voices.find(v => v.lang.startsWith(targetLocale.split('-')[0]));
                 }
 
                 if (preferredVoice) {

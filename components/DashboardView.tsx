@@ -12,8 +12,8 @@ import {
     Heart, Mail, Eye, Bell, ChevronRight, ChevronDown, Scale, ShieldCheck, Zap, Calendar, HardDrive, Link as LinkIcon,
     X as XIcon, FileSignature, BookOpen, GraduationCap, BarChart3, HelpCircle, BellRing, ToggleLeft, ToggleRight, UserX, MousePointer2, UserPlus, ZapOff
 } from 'lucide-react';
-import { generateAdvancedReport } from '../services/geminiService';
 import { analytics } from '../services/analyticsService';
+import { adminService } from '../services/adminService';
 import { supabase } from '../lib/supabase';
 import { MIRA_LOGO, COLORS, OFFICIAL_SOURCES } from '../constants';
 import { Post, JobPost, WORK_TOPICS, UNIFIED_CATEGORIES, Course } from '../types';
@@ -536,8 +536,33 @@ const DashboardView: React.FC<DashboardViewProps> = ({ masterPosts, onUpdatePost
                                     <div key={p.id} className="bg-black/20 p-3 rounded-xl border border-white/5 flex justify-between items-center">
                                         <span className="text-[10px] font-bold truncate pr-4">"{p.content.substring(0, 30)}..."</span>
                                         <div className="flex gap-2">
-                                            <button className="text-emerald-500 p-2 bg-emerald-500/10 rounded-lg hover:bg-emerald-500 hover:text-white transition-all"><CheckCircle2 size={14} /></button>
-                                            <button className="text-red-500 p-2 bg-red-500/10 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14} /></button>
+                                            <button
+                                                onClick={() => {
+                                                    // Ignore report
+                                                    onUpdatePosts(masterPosts.map(post => post.id === p.id ? { ...post, reports: 0 } : post));
+                                                }}
+                                                className="text-emerald-500 p-2 bg-emerald-500/10 rounded-lg hover:bg-emerald-500 hover:text-white transition-all"
+                                                title="Ignorar denúncia (conteúdo válido)"
+                                            >
+                                                <CheckCircle2 size={14} />
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm("Apagar este post definitivamente da comunidade?")) {
+                                                        try {
+                                                            await adminService.adminDeletePost(p.id);
+                                                            onUpdatePosts(masterPosts.filter(post => post.id !== p.id));
+                                                            alert("Post apagado com sucesso.");
+                                                        } catch (e: any) {
+                                                            alert("Erro: " + e.message);
+                                                        }
+                                                    }
+                                                }}
+                                                className="text-red-500 p-2 bg-red-500/10 rounded-lg hover:bg-red-500 hover:text-white transition-all"
+                                                title="Apagar permanentemente o post"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
