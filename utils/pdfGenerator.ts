@@ -87,13 +87,19 @@ export async function generateOfficialPDF(templateTitle: string, data: Record<st
   doc.text('(Assinatura do Requerente)', margin, y);
 
   // --- RODAPÉ ---
-  const footerY = 285;
+  const footerY = 280;
   doc.setDrawColor(240, 240, 240);
   doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
   doc.setFontSize(7);
-  doc.setTextColor(180, 180, 180);
+  doc.setTextColor(150, 150, 150);
   doc.setFont('helvetica', 'normal');
-  doc.text('MIRA APP © 2026 - DOCUMENTO PARA INSTRUÇÃO DE PROCESSO ADMINISTRATIVO', pageWidth / 2, footerY, { align: 'center' });
+
+  const disclaimerText = 'As informações apresentadas nesta aplicação têm caráter informativo e educativo. O MIRA não presta consultoria jurídica individual. Para aconselhamento personalizado, consulte a AIMA, o CNAIM ou um advogado especializado.';
+
+  doc.text(doc.splitTextToSize(disclaimerText, contentWidth), pageWidth / 2, footerY, { align: 'center' });
+
+  doc.setTextColor(180, 180, 180);
+  doc.text('MIRA APP © 2026 - DOCUMENTO PARA INSTRUÇÃO DE PROCESSO ADMINISTRATIVO', pageWidth / 2, footerY + 8, { align: 'center' });
 
   // Gera o PDF como Blob (Nativo do jsPDF v2)
   let blob: Blob;

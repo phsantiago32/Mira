@@ -346,7 +346,12 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                             ))}
                         </div>
 
-                        <div className="pt-6 pb-24 md:pb-6">
+                        <div className="pt-6 pb-24 md:pb-6 space-y-6">
+                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                                <p className="text-[9px] text-slate-500 font-bold leading-relaxed text-justify uppercase tracking-widest">
+                                    As informações apresentadas nesta aplicação têm caráter informativo e educativo. O MIRA não presta consultoria jurídica individual. Para aconselhamento personalizado, consulte a AIMA, o CNAIM ou um advogado especializado.
+                                </p>
+                            </div>
                             <button onClick={generatePDF} disabled={isGenerating} className="w-full bg-slate-900 text-white py-5 md:py-6 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3">
                                 {isGenerating ? <Loader2 className="animate-spin" size={20} /> : <Download size={24} strokeWidth={3} />}
                                 {isGenerating ? t('docs_loading_pdf', language) : t('docs_generate_btn', language)}
