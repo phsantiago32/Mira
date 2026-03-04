@@ -68,7 +68,7 @@ export const generateAssistantResponse = async (prompt: string, history: { role:
         }
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -87,7 +87,7 @@ export const generateAssistantResponse = async (prompt: string, history: { role:
           }
         } else {
           const errBody = await response.text();
-          console.error("Gemini REST Return Error 400/500:", errBody);
+          console.error("Gemini REST Return Error 400/500/404:", errBody);
 
           // DEMO/DEV FALLBACK: Se houver erro de chave, retornar mock de demonstração.
           if (response.status === 400 || response.status === 403 || response.status === 404) {
@@ -156,7 +156,7 @@ export const autoTranslateText = async (text: string, targetLanguage: string): P
     if (apiKey) {
       const prompt = `Translate the following text to ${targetLangName}. Return ONLY the translated text, no explanations, no quotes, no extra text:\n\n${text}`;
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
