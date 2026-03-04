@@ -76,6 +76,34 @@ export const templates: DocumentTemplate[] = [
         fields: [...standardFields]
     },
 
+    {
+        id: 'carta_atraso_aima', title: 'Carta Registada: Reclamação Atraso AIMA', category: CATEGORIES.IMMIGRATION, complexity: 'Medium', authority: 'AIMA', location: 'Correios (CTT)',
+        description: 'Carta formal registada para instar a AIMA a decidir o processo fora do prazo legal.',
+        explanation: 'expl_carta_atraso_aima',
+        purpose: 'Fazer prova de contacto e exigir andamento do processo.',
+        tips: 'Enviar sempre por Carta Registada com Aviso de Receção (C/AR) e guardar o comprovativo CTT.',
+        requirements: ['Número do Processo', 'Comprovativo de Pedido Inicial'],
+        fields: [...standardFields, { id: 'process_number', label: 'N.º de Processo/Recibo', placeholder: 'Ex: 123456/2023', type: 'text' }]
+    },
+    {
+        id: 'carta_pedido_informacao', title: 'Carta Registada: Pedido de Informação (Entidades)', category: CATEGORIES.RIGHTS, complexity: 'Easy', authority: 'Entidades Públicas', location: 'Correios (CTT)',
+        description: 'Modelo geral para solicitar o estado do processo ou informações a entidades.',
+        explanation: 'expl_carta_pedido_informacao',
+        purpose: 'Obter justificação por escrito de uma entidade pública (ao abrigo do CPA).',
+        tips: 'As entidades têm o dever de responder no prazo legal. Envie por C/AR.',
+        requirements: ['Dados de Identificação', 'Destinatário'],
+        fields: [...standardFields, { id: 'destination_entity', label: 'Entidade Destinatária', placeholder: 'Ex: Centro Distrital de Lisboa', type: 'text' }]
+    },
+    {
+        id: 'carta_provedor_justica', title: 'Queixa Formal ao Provedor de Justiça', category: CATEGORIES.RIGHTS, complexity: 'Medium', authority: 'Provedor de Justiça', location: 'Correios / Online',
+        description: 'Participação por inércia ou má conduta de serviços públicos (ex: AIMA, SS).',
+        explanation: 'expl_carta_provedor_justica',
+        purpose: 'Recorrer a uma entidade isenta para mediar conflitos estruturais com o Estado.',
+        tips: 'Junte cópias de todas as reclamações anteriores (cartas registadas, e-mails).',
+        requirements: ['Provas da Inércia', 'Cópia de Cartas Anteriores'],
+        fields: [...standardFields, { id: 'complaint_reason', label: 'Motivo da Queixa', placeholder: 'Ex: Atraso abusivo', type: 'text' }]
+    },
+
     // --- REGISTOS E NACIONALIDADE ---
     {
         id: 'irn_nacionalidade_casamento', title: 'Pedido de Nacionalidade Portuguesa (Por Casamento/União)', category: CATEGORIES.RIGHTS, complexity: 'Hard', authority: 'IRN', location: 'Conservatória do Registo Civil',
@@ -306,6 +334,44 @@ export const templates: DocumentTemplate[] = [
         tips: 'Pode precisar de testemunhas locais se não tiver contrato.',
         requirements: ['ID', 'Prova Morada'],
         fields: [...standardFields]
+    },
+
+    // --- TÁTICOS MIRA (SOBREVIVÊNCIA E DEFESA LEGAIS) ---
+    {
+        id: 'aima_deferimento_tacito', title: 'Requerimento de Deferimento Tácito (AIMA)', category: CATEGORIES.IMMIGRATION, complexity: 'Hard', authority: 'AIMA', location: 'Balcão / Correio',
+        description: 'Petição legal para forçar resposta após os 90 dias úteis legais do CPA.',
+        explanation: 'O Código de Procedimento Administrativo protege-o quando o Estado excede os prazos legais sem decisão. Com esta minuta invoca o deferimento tácito.',
+        purpose: 'Forçar emissão de cartão por quebra de prazos.',
+        tips: 'Envie sempre via Correio Registado com Aviso de Receção.',
+        requirements: ['Comprovativo Submissão Original', 'Passaporte'],
+        fields: [...standardFields, { id: 'process_number', label: 'N.º Processo / Recibo', placeholder: 'Ex: 12345/2023', type: 'text' }]
+    },
+    {
+        id: 'aima_audiencia_previa', title: 'Resposta a Indeferimento (Audiência Prévia)', category: CATEGORIES.IMMIGRATION, complexity: 'Hard', authority: 'AIMA', location: 'Portal / Correio',
+        description: 'Minuta de pronúncia para responder a uma Carta de Intenção de Indeferimento/Abandono.',
+        explanation: 'Quando a AIMA ameaça arquivar o processo, tem tipicamente 10 dias úteis para se pronunciar (Direito de Audiência Prévia) ou juntar os documentos em falta.',
+        purpose: 'Travar o arquivamento legal de um processo na AIMA.',
+        tips: 'O relógio começa a contar poucos dias após a data no envelope. Não falhe o prazo!',
+        requirements: ['Cópia da Notificação', 'Novos Docs Anexos'],
+        fields: [...standardFields, { id: 'notification_date', label: 'Data da Notificação', placeholder: 'AAAA-MM-DD', type: 'date' }]
+    },
+    {
+        id: 'promessa_trabalho_art88', title: 'Contrato de Trabalho Formato AIMA (Art. 88)', category: CATEGORIES.WORK, complexity: 'Medium', authority: 'Empregador', location: 'Empresa',
+        description: 'Contrato de promessa aceite pelas imigrações sem cláusulas nulas.',
+        explanation: 'Use esta minuta padrão se o patrão quiser contratar mas não tiver um advogado para redigir um contrato com o formato que a Segurança Social e AIMA aceitam.',
+        purpose: 'Minuta perfeita para vincular o Artigo 88.º.',
+        tips: 'Deve ter assinaturas reconhecidas caso não tenha carimbo da empresa.',
+        requirements: ['Dados Empresa', 'Dados Trabalhador'],
+        fields: [...standardFields, { id: 'company_nif', label: 'NIF Empresa', placeholder: 'Ex: 500000000', type: 'text' }]
+    },
+    {
+        id: 'sef_declaracao_entrada', title: 'Declaração de Entrada em Território', category: CATEGORIES.IMMIGRATION, complexity: 'Easy', authority: 'PSP / GNR / AIMA', location: 'Esquadra',
+        description: 'Para quem entrou via voo com escala em Schengen (sem carimbo PT).',
+        explanation: 'Muitos ficam ilegais por meses sem saber que tinham 3 dias úteis para informar o estado Português de que chegaram (art. 14º da Lei de Imigração).',
+        purpose: 'Evitar multas e problemas no arranque de processos.',
+        tips: 'Anexe o bilhete de avião ao formulário para provar a data.',
+        requirements: ['Passaporte', 'Bilhete de Viagem'],
+        fields: [...standardFields, { id: 'entry_date', label: 'Data de Chegada', placeholder: 'AAAA-MM-DD', type: 'date' }, { id: 'border_point', label: 'Ponto de Escala', placeholder: 'Ex: Madrid', type: 'text' }]
     }
 ];
 
@@ -391,5 +457,15 @@ export const serviceGuides = [
             { docName: 'Declaração de Opção', whereToGet: 'Apenas necessária em casos específicos de múltiplas nacionalidades.' }
         ],
         faq: [{ q: 'Quando posso votar?', a: 'Depende da nacionalidade. Brasileiros com Estatuto de Direitos Políticos e outros com 2-5 anos de residência.' }]
+    },
+    {
+        id: 'g_indeferimento_ajuda', category: CATEGORIES.IMMIGRATION, title: 'Recebi Carta de Abandono (Indeferimento). E agora?', authority: 'AIMA / CPA',
+        description: 'Passo a passo legal de como usar o Direito a Audiência Prévia.',
+        explanation: 'Qualquer notificação do Estado a dizer "Vamos arquivar o seu pedido" NÃO é o fim. Tem o Direito à Audiência Prévia (Art 121.º do CPA) de 10 dias úteis para justificar a falta ou anexar documentos.',
+        steps: [
+            { docName: 'Minuta de Audiência Prévia (Resposta a Indeferimento)', whereToGet: 'Disponível acima no gerador de documentos MIRA.' },
+            { docName: 'Anexos a Pedidos na Notificação', whereToGet: 'Junte NIF, Passaporte Novo ou SS se era isso que faltava e envie via CTT Registado urgente.' }
+        ],
+        faq: [{ q: 'Posso pedir ajuda a advogado?', a: 'Sim, mas se o prazo for curto, preencha o MIRA, assine, envie com CTT registado, e procure advogado DEPOIS. O prazo não pausa!' }]
     }
 ];

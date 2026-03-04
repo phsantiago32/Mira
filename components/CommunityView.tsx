@@ -123,54 +123,51 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   const handleCreatePost = async () => {
     if (!newPostContent.trim() || !selectedCategory) return;
 
-    const tempId = Date.now().toString();
-    const newPost: Post = {
-      id: tempId,
-      authorId: user.id,
-      authorName: user.name,
-      authorAvatar: user.avatar || '',
-      title: 'Post Comunitário',
-      content: newPostContent,
-      category: selectedCategory,
-      tags: [],
-      likes: 0,
-      comments: [],
-      isVerified: false,
-      isFraudWarning: false,
-      timestamp: 'Agora mesmo',
-      reports: 0,
-      urgency: 0,
-      validationStatus: 'pending',
-      usefulVotes: 0,
-      fakeVotes: 0,
-      reviewVotes: 0,
-      backgroundImage: selectedImage
-    };
-
-    // Optimistic UI updates
-    setMasterPosts([newPost, ...masterPosts]);
-    setShowCreateModal(false);
-    setNewPostContent('');
-    setSelectedCategory('');
-    onEarnPoints(10);
-    analytics.track('post_created', user.id, selectedCategory);
-
+    // Em vez de "Optimistic UI", primeiro tenta salvar na Base de Dados real.
+    // Isto assegura Persistência Total como pedido.
     try {
-      // Real DB logic
       const savedDbPost = await communityService.createPost({
         authorId: user.id,
-        title: newPost.title,
-        content: newPost.content,
-        category: newPost.category,
-        backgroundImage: newPost.backgroundImage
+        title: 'Post Comunitário',
+        content: newPostContent,
+        category: selectedCategory,
+        backgroundImage: selectedImage
       });
 
-      // Update the temporary ID with real DB ID
       if (savedDbPost) {
-        setMasterPosts(prev => prev.map(p => p.id === tempId ? { ...p, id: savedDbPost.id } : p));
+        const newPost: Post = {
+          id: savedDbPost.id,
+          authorId: user.id,
+          authorName: user.name,
+          authorAvatar: user.avatar || '',
+          title: 'Post Comunitário',
+          content: newPostContent,
+          category: selectedCategory,
+          tags: [],
+          likes: 0,
+          comments: [],
+          isVerified: false,
+          isFraudWarning: false,
+          timestamp: 'Agora mesmo',
+          reports: 0,
+          urgency: 0,
+          validationStatus: 'pending',
+          usefulVotes: 0,
+          fakeVotes: 0,
+          reviewVotes: 0,
+          backgroundImage: selectedImage
+        };
+
+        setMasterPosts([newPost, ...masterPosts]);
+        setShowCreateModal(false);
+        setNewPostContent('');
+        setSelectedCategory('');
+        onEarnPoints(10);
+        analytics.track('post_created', user.id, selectedCategory);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Failed to save real post:', e);
+      showToast(`Erro ao gravar postagem: ${e?.message || 'Erro Desconhecido'}`, 'error');
     }
   };
 
@@ -218,41 +215,37 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     if (!newComment.trim() || !commentingOn) return;
 
     const finalContent = commentingOn.replyToName ? `@${commentingOn.replyToName} ${newComment}` : newComment;
-
-    const comment: Comment = {
-      id: Date.now().toString(),
-      authorId: user.id,
-      authorName: user.name,
-      authorAvatar: user.avatar,
-      content: finalContent,
-      timestamp: 'Agora mesmo',
-      likes: 0
-    };
-
     const backupPostId = commentingOn.postId;
-    setMasterPosts(prev => prev.map(p => {
-      if (p.id !== backupPostId) return p;
-      return { ...p, comments: [...p.comments, comment] };
-    }));
-
-    setCommentingOn(null);
-    setNewComment('');
-    onEarnPoints(2);
-    analytics.track('comment_created', user.id);
 
     try {
+      // Real DB logic first
       const dbComment = await communityService.createComment(backupPostId, user.id, finalContent);
       if (dbComment) {
-        // Update temp comment with real DB data
+        const comment: Comment = {
+          id: dbComment.id,
+          authorId: user.id,
+          authorName: user.name,
+          authorAvatar: user.avatar,
+          content: finalContent,
+          timestamp: 'Agora mesmo',
+          likes: 0
+        };
+
+        // Update UI only after DB confirmation
         setMasterPosts(prev => prev.map(p => {
           if (p.id !== backupPostId) return p;
-          return {
-            ...p,
-            comments: p.comments.map(c => c.id === comment.id ? { ...c, id: dbComment.id } : c)
-          };
+          return { ...p, comments: [...p.comments, comment] };
         }));
+
+        setCommentingOn(null);
+        setNewComment('');
+        onEarnPoints(2);
+        analytics.track('comment_created', user.id);
       }
-    } catch (error) { }
+    } catch (error: any) {
+      console.error("Erro ao publicar comentário:", error);
+      showToast(`Erro ao enviar comentário: ${error?.message || 'Tente novamente'}`, 'error');
+    }
   };
 
   const handleFactVote = async (postId: string, isTrue: boolean) => {

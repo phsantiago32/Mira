@@ -42,7 +42,10 @@ const MOCK_POSTS: Post[] = [
   }
 ];
 
+import { useToast } from './Toast';
+
 export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language, onLogout }) => {
+  const { showToast } = useToast();
   const [showNotifSettings, setShowNotifSettings] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences>({
     OFFICIAL_AIMA: true,
@@ -70,10 +73,10 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
 
       setShowSuggestionModal(false);
       setSuggestionData({ subject: '', message: '' });
-      alert("✅ Sugestão enviada com sucesso! Pode ver na Central de Moderação.");
+      showToast("Sugestão enviada com sucesso! Pode ver na Central de Moderação.", "success");
     } catch (err: any) {
       console.error('handleSuggestionSubmit error:', err);
-      alert(`Erro ao registar sugestão: ${err?.message || 'Tente novamente.'}`);
+      showToast(`Erro ao registar sugestão: ${err?.message || 'Tente novamente.'}`, "error");
     } finally {
       setIsSubmitting(false);
     }

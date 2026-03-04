@@ -149,12 +149,12 @@ export const adminService = {
 
     async fetchComplaints() {
         const { data: oldData } = await supabase.from('complaints').select('*, profiles(name)').order('created_at', { ascending: false });
-        const { data: newData } = await supabase.from('reports').select('*').in('type', ['service_rating', 'service_queue']).order('created_at', { ascending: false });
+        const { data: newData } = await supabase.from('reports').select('*').eq('type', 'service_queue').order('created_at', { ascending: false });
 
         const mappedNew = (newData || []).map(r => ({
             id: r.id,
             profiles: { name: 'REST Form' },
-            subject: r.type === 'service_rating' ? 'Avaliação de Serviço' : 'Fila de Serviço',
+            subject: 'Fila de Serviço',
             content: r.content,
             created_at: r.created_at
         }));
@@ -180,15 +180,35 @@ export const adminService = {
 
         const { data: newData } = await supabase.from('reports').select('*').in('type', ['post_report', 'comment_report']).order('created_at', { ascending: false });
 
-        const mappedNew = (newData || []).map(r => ({
-            id: r.id,
-            profiles: { name: 'REST Form' },
-            reporter_email: '',
-            reason: r.content,
-            post_id: r.type === 'post_report' ? 'sim' : null,
-            posts: null,
-            comments: null,
-            created_at: r.created_at
+        const mappedNew = await Promise.all((newData || []).map(async r => {
+            let targetId = null;
+            let isPost = r.type === 'post_report';
+            const match = r.content?.match(/ID:\s*([a-zA-Z0-9-]+)/);
+            if (match) targetId = match[1];
+
+            // Fetch missing content for better admin view
+            let contentRef = 'Conteúdo Restrito/Apagado';
+            if (targetId) {
+                if (isPost) {
+                    const { data: postData } = await supabase.from('posts').select('content').eq('id', targetId).maybeSingle();
+                    if (postData) contentRef = postData.content;
+                } else {
+                    const { data: commentData } = await supabase.from('comments').select('content').eq('id', targetId).maybeSingle();
+                    if (commentData) contentRef = commentData.content;
+                }
+            }
+
+            return {
+                id: r.id,
+                profiles: { name: 'REST Form' },
+                reporter_email: '',
+                reason: r.content,
+                post_id: targetId,
+                is_post_type: isPost, // hidden field to determine table
+                posts: isPost ? { content: contentRef } : null,
+                comments: !isPost ? { content: contentRef } : null,
+                created_at: r.created_at
+            };
         }));
 
         return [...(oldData || []), ...mappedNew].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -197,6 +217,27 @@ export const adminService = {
     async deleteCommunityReport(id: string) {
         await supabase.from('community_reports').delete().eq('id', id);
         await supabase.from('reports').delete().eq('id', id);
+    },
+
+    async adminDeleteReportedContent(r: any) {
+        // Determinar ID real
+        let targetId = r.post_id;
+        let isPost = r.is_post_type !== undefined ? r.is_post_type : (r.posts != null);
+
+        if (!targetId && typeof r.reason === 'string') {
+            const match = r.reason.match(/ID:\s*([a-zA-Z0-9-]+)/);
+            if (match) targetId = match[1];
+        }
+
+        if (targetId) {
+            if (isPost) {
+                await supabase.from('posts').delete().eq('id', targetId);
+            } else {
+                await supabase.from('comments').delete().eq('id', targetId);
+            }
+        }
+
+        await this.deleteCommunityReport(r.id);
     },
 
     /**

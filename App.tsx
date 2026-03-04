@@ -307,7 +307,7 @@ const App: React.FC = () => {
         alert("Base de dados de utilizadores limpa com sucesso (Simulação).");
       }} />;
       case ViewType.ADMIN_HUB: return <AdminHub onBack={() => setCurrentView(ViewType.DASHBOARD)} />;
-      case ViewType.PRIVACY: return <PrivacyPage />;
+      case ViewType.PRIVACY: return <PrivacyPage language={language} />;
       default: return <HomeView user={user} onViewChange={setCurrentView} language={language} />;
     }
   };
@@ -334,14 +334,29 @@ const App: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <button
-                  onClick={() => setShowLangMenu(true)}
-                  className={`p-2.5 rounded-2xl flex items-center gap-3 transition-all shadow-lg ${isAdmin ? 'bg-slate-800 text-white shadow-xl' : 'bg-mira-orange text-white shadow-orange-500/30 hover:scale-110 active:scale-95'}`}
+                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  className={`p-2.5 rounded-2xl flex items-center gap-3 transition-all shadow-lg ${isAdmin ? 'bg-slate-800 text-white shadow-xl' : 'bg-mira-orange text-white shadow-orange-500/30 hover:scale-[1.05] active:scale-95'}`}
                 >
                   <div className="p-1.5 bg-white/20 rounded-lg">
                     <Globe size={18} className="animate-pulse-slow" />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-[0.2em]">{language}</span>
+                  <ChevronDown size={14} className={`transition-transform duration-300 ${showLangMenu ? 'rotate-180' : ''}`} />
                 </button>
+
+                {showLangMenu && (
+                  <div className="absolute top-full right-0 mt-3 w-40 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 animate-in slide-in-from-top-2">
+                    {['PT', 'EN', 'ES', 'FR'].map(l => (
+                      <button
+                        key={l}
+                        onClick={() => { handleSetLanguage(l); setShowLangMenu(false); }}
+                        className={`w-full text-left px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${language === l ? 'bg-mira-orange text-white shadow-lg shadow-orange-500/30' : 'text-slate-600 hover:bg-mira-orange/10 hover:text-mira-orange'}`}
+                      >
+                        {l === 'PT' ? 'Português' : l === 'EN' ? 'English' : l === 'ES' ? 'Español' : 'Français'}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button
@@ -356,52 +371,7 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Netflix-Style Language Modal */}
-        {showLangMenu && (
-          <div className="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-2xl flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
-            <div className="w-full max-w-lg bg-white/5 border border-white/10 rounded-[3rem] p-10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-mira-orange/20 rounded-full blur-[80px] -mr-32 -mt-32"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-mira-blue/20 rounded-full blur-[80px] -ml-32 -mb-32"></div>
-
-              <div className="relative z-10 space-y-8 text-center text-white">
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-black uppercase tracking-tighter">Escolha o seu Idioma</h2>
-                  <p className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em]">Written & Audio Experience</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { code: 'PT', label: 'Português', sub: 'Nativo', flag: '🇵🇹' },
-                    { code: 'EN', label: 'English', sub: 'Standard', flag: '🇬🇧' },
-                    { code: 'ES', label: 'Español', sub: 'Latino', flag: '🇪🇸' },
-                    { code: 'FR', label: 'Français', sub: 'Européen', flag: '🇫🇷' }
-                  ].map((l) => (
-                    <button
-                      key={l.code}
-                      onClick={() => { handleSetLanguage(l.code); setShowLangMenu(false); }}
-                      className={`group p-6 rounded-[2rem] border transition-all flex flex-col items-center gap-2 ${language === l.code ? 'bg-mira-orange border-mira-orange shadow-2xl scale-105' : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'}`}
-                    >
-                      <span className="text-3xl mb-1">{l.flag}</span>
-                      <span className="font-black text-xs uppercase tracking-widest">{l.label}</span>
-                      <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <Volume2 size={10} />
-                        <span className="text-[8px] font-black uppercase tracking-widest">Audio ON</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setShowLangMenu(false)}
-                  className="mt-6 p-4 text-white/40 hover:text-white transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+        {/* Modal removed as per user request */}
         {/* Main Content Area with Bottom/Side Navigation */}
         <div className="flex flex-1 overflow-hidden relative">
           {/* Navigation - Fixed on bottom for mobile, sidebar-like for desktop */}

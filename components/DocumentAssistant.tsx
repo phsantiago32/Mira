@@ -74,68 +74,53 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
             const pdfResult = await generateOfficialPDF(selectedTemplate.title, formData);
 
             // Tenta obter o usuário atual para upload no Supabase
-            const { data: { session } } = await supabase.auth.getSession();
-            let publicUrl = pdfResult.pdfUrl;
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session?.user) {
+                    const userId = session.user.id;
+                    const fileExt = pdfResult.filename.split('.').pop() || 'pdf';
+                    const fileId = Math.random().toString(36).substring(2, 10);
+                    const filePath = `${userId}/doc_${fileId}.${fileExt}`;
 
-            if (session?.user) {
-                const userId = session.user.id;
-                const fileExt = pdfResult.filename.split('.').pop() || 'pdf';
-                const fileId = Math.random().toString(36).substring(2, 10);
-                const filePath = `${userId}/doc_${fileId}.${fileExt}`;
-
-                // Upload real para o Supabase Storage
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('documents')
-                    .upload(filePath, pdfResult.blob, {
-                        contentType: 'application/pdf',
-                        cacheControl: '3600',
-                        upsert: false
-                    });
-
-                if (!uploadError && uploadData) {
-                    const { data: { publicUrl: storageUrl } } = supabase.storage
+                    // Upload real para o Supabase Storage (Assíncrono, não bloqueia UI)
+                    supabase.storage
                         .from('documents')
-                        .getPublicUrl(filePath);
+                        .upload(filePath, pdfResult.blob, {
+                            contentType: 'application/pdf',
+                            cacheControl: '3600',
+                            upsert: false
+                        }).then(({ data: uploadData, error: uploadError }) => {
+                            if (!uploadError && uploadData) {
+                                const { data: { publicUrl: storageUrl } } = supabase.storage
+                                    .from('documents')
+                                    .getPublicUrl(filePath);
 
-                    publicUrl = storageUrl;
-
-                    // Salva histórico no banco de dados real
-                    await supabase.from('user_documents').insert([{
-                        user_id: userId,
-                        title: selectedTemplate.title,
-                        form_data: formData,
-                        file_url: storageUrl,
-                        is_draft: false
-                    }]);
-                } else {
-                    console.error("Erro ao fazer upload para Storage:", uploadError);
+                                // Salva histórico no banco de dados real
+                                supabase.from('user_documents').insert([{
+                                    user_id: userId,
+                                    title: selectedTemplate.title,
+                                    form_data: formData,
+                                    file_url: storageUrl,
+                                    is_draft: false
+                                }]).then();
+                            } else {
+                                console.error("Erro ao fazer upload para Storage:", uploadError);
+                            }
+                        });
                 }
-            }
+            });
 
             setGeneratedFile({
                 save: (n: string) => {
                     try {
-                        // Industry-standard approach: create blob URL and force download via <a> tag
-                        const pdfBlob = pdfResult.blob;
-                        const blobUrl = URL.createObjectURL(pdfBlob);
-                        const link = document.createElement('a');
-                        link.href = blobUrl;
-                        link.download = n.endsWith('.pdf') ? n : n + '.pdf';
-                        link.style.display = 'none';
-                        document.body.appendChild(link);
-                        link.click();
-                        // Cleanup after a small delay to ensure download starts
-                        setTimeout(() => {
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(blobUrl);
-                        }, 1000);
+                        const finalName = n.toLowerCase().endsWith('.pdf') ? n : n + '.pdf';
+                        pdfResult.doc.save(finalName);
                     } catch (e) {
                         console.error("Download falhou, a abrir em nova aba", e);
                         window.open(pdfResult.pdfUrl, '_blank');
                     }
                 },
                 filename: pdfResult.filename,
-                isSync: session?.user ? true : false
+                isSync: true
             });
 
             // Adicionalmente salva no histórico local, caso usado por outros componentes
@@ -144,14 +129,14 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                 title: selectedTemplate.title,
                 category: selectedTemplate.category,
                 date: new Date().toISOString(),
-                fileUrl: publicUrl
+                fileUrl: pdfResult.pdfUrl
             });
 
             onEarnPoints(50);
             setActiveScreen('success');
         } catch (error: any) {
             console.error("Erro na geração de documento:", error);
-            alert(`Erro ao gerar o documento: ${error?.message || 'Tente novamente'}. Verifique se o Supabase Storage está configurado.`);
+            alert(`Erro ao gerar o documento: ${error?.message || 'Tente novamente'}.`);
         } finally {
             setIsGenerating(false);
         }
@@ -250,6 +235,11 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                                         <p className="text-xs font-black uppercase tracking-widest">Nenhum documento encontrado</p>
                                     </div>
                                 )}
+                                <div className="mt-8 p-4 bg-red-50/50 border border-red-100 rounded-2xl">
+                                    <p className="text-[10px] text-red-800/70 font-bold leading-relaxed text-center italic">
+                                        {t('general_disclaimer_note', language)}
+                                    </p>
+                                </div>
                             </div>
                         ) : (
                             <RegularizationWizard

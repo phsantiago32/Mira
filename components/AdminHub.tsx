@@ -4,7 +4,7 @@ import { User, Post, ViewType } from '../types';
 import {
     Users, ShieldAlert, MailX, Trash2, Ban, ShieldCheck,
     Search, Filter, ChevronRight, AlertCircle, CheckCircle2,
-    MoreVertical, UserMinus, ShieldOff, MessageSquare, Sparkles, RefreshCcw, Briefcase, Map as MapIcon, X
+    MoreVertical, UserMinus, ShieldOff, MessageSquare, Sparkles, RefreshCcw, Briefcase, Map as MapIcon, X, MessageCircle, AlertTriangle
 } from 'lucide-react';
 import { COLORS } from '../constants';
 import { supabase } from '../lib/supabase';
@@ -15,7 +15,7 @@ interface AdminHubProps {
 }
 
 export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
-    const [activeTab, setActiveTab] = useState<'users' | 'content' | 'suggestions' | 'knowledge' | 'sync'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'content' | 'suggestions' | 'knowledge'>('users');
     const [users, setUsers] = useState<User[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
     const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -26,6 +26,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [newKnowledge, setNewKnowledge] = useState({ topic: '', information: '', category: '', source: '' });
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         loadData();
@@ -115,12 +116,6 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                     >
                         <MessageSquare size={16} /> Saber AI
                     </button>
-                    <button
-                        onClick={() => setActiveTab('sync')}
-                        className={`flex-auto min-w-[120px] md:flex-none flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'sync' ? 'bg-white text-slate-900 shadow-xl scale-[1.02]' : 'text-white/60 hover:text-white'}`}
-                    >
-                        <RefreshCcw size={16} /> Sync
-                    </button>
                 </div>
             </div>
 
@@ -156,8 +151,23 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => handleAction(() => adminService.toggleBlockUser(u.id, !u.isBlocked))} className={`p-3 rounded-xl transition-all ${u.isBlocked ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-600 shadow-sm'}`}>
-                                                {u.isBlocked ? <ShieldCheck size={18} /> : <UserMinus size={18} />}
+                                            <button
+                                                onClick={() => handleAction(() => adminService.toggleBlockUser(u.id, !u.isBlocked))}
+                                                className={`p-3 rounded-xl transition-all ${u.isBlocked ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-500 shadow-sm'}`}
+                                                title={u.isBlocked ? "Desbloquear" : "Suspender Usuário"}
+                                            >
+                                                {u.isBlocked ? <ShieldCheck size={18} /> : <Ban size={18} />}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (window.confirm('Tem certeza que quer DESSAPARECER com este usuário para sempre?')) {
+                                                        handleAction(() => adminService.deleteUser(u.id));
+                                                    }
+                                                }}
+                                                className="p-3 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm"
+                                                title="Apagar permanentemente"
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </div>
@@ -166,90 +176,120 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                         )}
 
                         {activeTab === 'content' && (
-                            <div className="grid grid-cols-1 gap-6">
-                                <div className="p-8 bg-red-50 rounded-[3rem] border border-red-100">
-                                    <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2">Moderação de Posts</p>
-                                    <p className="text-xs text-red-900 font-bold leading-relaxed">Posts reportados pelos usuários aparecem aqui. <br />Ex: "Este post contém fake news sobre vistorias da AIMA".</p>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="p-5 sm:p-6 bg-red-50 rounded-3xl border border-red-100 shadow-sm">
+                                    <p className="text-[10px] font-black text-red-400 uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2"><ShieldAlert size={14} /> Moderação de Posts</p>
+                                    <p className="text-[11px] sm:text-xs text-red-900 font-bold leading-relaxed">Posts reportados pelos usuários aparecem aqui.</p>
                                 </div>
                                 {posts.map(p => (
-                                    <div key={p.id} className="p-8 bg-white border border-slate-100 rounded-[3rem] shadow-sm space-y-6">
+                                    <div key={p.id} className="p-5 sm:p-6 bg-white border border-slate-100 rounded-3xl shadow-sm space-y-4">
                                         <div className="flex justify-between items-start">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-red-100 text-red-600 rounded-xl"><ShieldAlert size={16} /></div>
-                                                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">{p.reports || 0} Denúncias</p>
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-red-100 text-red-600 rounded-lg"><ShieldAlert size={14} /></div>
+                                                <p className="text-[9px] font-black text-red-600 uppercase tracking-widest">{p.reports || 0} Denúncias</p>
                                             </div>
-                                            <button onClick={() => handleAction(() => adminService.adminDeletePost(p.id))} className="p-3 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all">
-                                                <Trash2 size={18} />
+                                            <button onClick={() => handleAction(() => adminService.adminDeletePost(p.id))} className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all">
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
-                                        <h4 className="font-black text-slate-900 text-lg uppercase tracking-tight leading-tight">{p.title}</h4>
-                                        <p className="text-xs text-slate-500 font-medium leading-relaxed">{p.content}</p>
+                                        <div>
+                                            <h4 className="font-black text-slate-900 text-[13px] sm:text-sm uppercase tracking-tight leading-snug mb-1">{p.title}</h4>
+                                            <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-relaxed line-clamp-3">{p.content}</p>
+                                        </div>
                                     </div>
                                 ))}
-                                {posts.length === 0 && <div className="text-center py-20 bg-slate-50 rounded-[3rem] border border-dashed border-slate-200"><p className="text-xs font-black text-slate-300 uppercase tracking-widest">Nenhuma denúncia ativa</p></div>}
+                                {posts.length === 0 && <div className="text-center py-10 bg-slate-50 rounded-3xl border border-dashed border-slate-200"><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Nenhuma denúncia ativa</p></div>}
                             </div>
                         )}
 
                         {activeTab === 'suggestions' && (
-                            <div className="space-y-12">
-                                <div className="p-8 bg-mira-orange-pastel/20 rounded-[3rem] border border-mira-orange/10">
-                                    <p className="text-[10px] font-black text-mira-orange uppercase tracking-widest mb-2">Canal de Feedback</p>
-                                    <p className="text-xs text-slate-800 font-bold">Aqui chegam os pedidos de novos recursos. <br />Ex: "Gostaria de ver o tempo de espera real nas juntas de freguesia".</p>
+                            <div className="space-y-8">
+                                <div className="p-5 sm:p-6 bg-mira-orange/5 rounded-3xl border border-mira-orange/20 shadow-sm">
+                                    <p className="text-[10px] font-black text-mira-orange uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2"><MessageCircle size={14} /> Canal de Feedback</p>
+                                    <p className="text-[11px] sm:text-xs text-slate-700 font-bold leading-relaxed">Sugestões e denúncias da aplicação e da rede.</p>
                                 </div>
-                                <div className="space-y-6">
-                                    <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900">Sugestões de Melhoria</h3>
-                                    {suggestions.map(s => (
-                                        <div key={s.id} className="p-8 bg-white border border-slate-100 rounded-[3rem] shadow-sm space-y-4">
-                                            <div className="flex justify-between">
-                                                <span className="text-[10px] font-black text-mira-orange uppercase tracking-widest">{s.profiles?.name || 'Membro'}</span>
-                                                <button onClick={() => handleAction(() => adminService.deleteSuggestion(s.id))} className="text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 px-1 border-b border-mira-orange/20 pb-2">Sugestões de Melhoria</h3>
+                                    <div className="grid gap-3">
+                                        {suggestions.map(s => (
+                                            <div key={s.id} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[9px] font-black text-mira-orange bg-mira-orange/10 px-2 py-1 rounded-md uppercase tracking-widest truncate max-w-[150px]">{s.profiles?.name || 'Membro'}</span>
+                                                    <button onClick={() => handleAction(() => adminService.deleteSuggestion(s.id))} className="p-2 bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors rounded-xl"><Trash2 size={14} /></button>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-slate-900 text-[12px] leading-snug">{s.subject}</h4>
+                                                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{s.content}</p>
+                                                </div>
                                             </div>
-                                            <h4 className="font-bold text-slate-900">{s.subject}</h4>
-                                            <p className="text-xs text-slate-500">{s.content}</p>
-                                        </div>
-                                    ))}
-                                    {suggestions.length === 0 && <p className="text-center text-[10px] font-black text-slate-300 uppercase py-10">Nenhuma sugestão nova</p>}
-                                </div>
-                                <div className="space-y-6">
-                                    <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900">Denúncias & Queixas</h3>
-                                    {complaints.map(c => (
-                                        <div key={c.id} className="p-8 bg-red-50 border border-red-100 rounded-[3rem] shadow-sm space-y-4">
-                                            <div className="flex justify-between">
-                                                <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">RELATADO POR: {c.profiles?.name || 'Membro'}</span>
-                                                <button onClick={() => handleAction(() => adminService.deleteComplaint(c.id))} className="text-red-300 hover:text-red-600"><Trash2 size={16} /></button>
-                                            </div>
-                                            <h4 className="font-bold text-red-800">{c.subject}</h4>
-                                            <p className="text-xs text-red-600/80">{c.content}</p>
-                                        </div>
-                                    ))}
-                                    {complaints.length === 0 && <p className="text-center text-[10px] font-black text-slate-300 uppercase py-10">Nenhuma denúncia nova</p>}
+                                        ))}
+                                    </div>
+                                    {suggestions.length === 0 && <div className="text-center py-8 bg-slate-50 rounded-3xl"><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Nenhuma sugestão nova</p></div>}
                                 </div>
 
-                                <div className="space-y-6">
-                                    <h3 className="text-xl font-black uppercase tracking-tighter text-slate-900">Relatórios da Comunidade</h3>
-                                    {communityReports.map(r => (
-                                        <div key={r.id} className="p-8 bg-slate-900 text-white rounded-[3rem] shadow-sm space-y-4">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-black text-mira-orange uppercase tracking-widest leading-none">DENUNCIANTE: {r.profiles?.name || 'Membro'}</span>
-                                                    {r.reporter_email && <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1">{r.reporter_email}</span>}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-red-600 px-1 border-b border-red-500/20 pb-2 flex items-center gap-2"><AlertTriangle size={14} /> Denúncias e Queixas</h3>
+                                    <div className="grid gap-3">
+                                        {complaints.map(c => (
+                                            <div key={c.id} className="p-5 bg-red-50 border border-red-100 rounded-3xl shadow-sm space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[8px] font-black text-red-600 uppercase tracking-widest bg-red-100 px-2 py-1 rounded-md truncate max-w-[150px]">POR: {c.profiles?.name || 'Membro'}</span>
+                                                    <button onClick={() => handleAction(() => adminService.deleteComplaint(c.id))} className="p-2 bg-white text-red-400 hover:text-red-600 shadow-sm transition-colors rounded-xl"><Trash2 size={14} /></button>
                                                 </div>
-                                                <button onClick={() => handleAction(() => adminService.deleteCommunityReport(r.id))} className="text-white/20 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                                <div>
+                                                    <h4 className="font-black text-red-800 text-[12px] leading-snug">{c.subject}</h4>
+                                                    <p className="text-[11px] text-red-600/80 mt-1 leading-relaxed">{c.content}</p>
+                                                </div>
                                             </div>
-                                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-2">Motivo / Explicação</p>
-                                                <p className="text-xs font-bold leading-relaxed">{r.reason}</p>
+                                        ))}
+                                    </div>
+                                    {complaints.length === 0 && <div className="text-center py-8 bg-slate-50 rounded-3xl"><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Nenhuma denúncia nova</p></div>}
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 px-1 border-b border-slate-200 pb-2">Relatórios da Comunidade</h3>
+                                    <div className="grid gap-3">
+                                        {communityReports.map(r => (
+                                            <div key={r.id} className="p-5 bg-slate-900 text-white rounded-3xl shadow-md space-y-4 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-20 h-20 bg-mira-orange/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                                                <div className="flex justify-between items-start relative z-10">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-[9px] font-black text-mira-orange bg-mira-orange/10 self-start px-2 py-0.5 rounded uppercase tracking-widest leading-none">DENUNCIANTE: {r.profiles?.name || 'Membro'}</span>
+                                                        {r.reporter_email && <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{r.reporter_email}</span>}
+                                                    </div>
+                                                    <button onClick={() => handleAction(() => adminService.deleteCommunityReport(r.id))} className="p-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors rounded-xl" title="Ignorar esta denúncia e apagar apenas o alerta"><X size={14} /></button>
+                                                </div>
+
+                                                <div className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700/50">
+                                                    <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Motivo</span>
+                                                    <p className="text-[11px] font-bold text-slate-300 mb-2">{r.reason}</p>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 block">Conteúdo Original</span>
+                                                        <button
+                                                            onClick={() => setExpandedIds(prev => { const n = new Set(prev); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n; })}
+                                                            className="text-[9px] font-black text-blue-400 uppercase tracking-widest"
+                                                        >
+                                                            {expandedIds.has(r.id) ? 'Ocultar' : 'Aceder ao Conteúdo Completo'}
+                                                        </button>
+                                                    </div>
+                                                    <p className={`text-[11px] font-medium text-slate-400 italic bg-slate-900/50 p-2 rounded-xl border border-slate-800 ${expandedIds.has(r.id) ? '' : 'line-clamp-3'}`}>
+                                                        "{r.reported_content_text || 'Conteúdo indisponível ou apagado.'}"
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex flex-col gap-2 relative z-10 mt-2">
+                                                    <button onClick={() => {
+                                                        if (window.confirm("ATENÇÃO: Clicou no Lixo.\nIsto irá DELETAR PERMANENTEMENTE o post/comentário relatado e fechará esta denúncia. Tem a certeza?")) {
+                                                            handleAction(() => adminService.adminDeleteReportedContent(r));
+                                                        }
+                                                    }} className="w-full flex justify-center items-center gap-2 py-3 bg-red-500 text-white hover:bg-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all">
+                                                        <Trash2 size={14} /> DELETAR CONTEÚDO PERMANENTEMENTE
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="p-4 bg-white/10 rounded-2xl border border-white/10">
-                                                <p className="text-[10px] font-black text-mira-orange uppercase tracking-widest mb-2">Conteúdo Original ({r.post_id ? 'Post' : 'Comentário'})</p>
-                                                <p className="text-xs font-medium text-white/60 line-clamp-3">{r.posts?.content || r.comments?.content || 'Conteúdo não disponível'}</p>
-                                            </div>
-                                            <div className="pt-2">
-                                                <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">{new Date(r.created_at).toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {communityReports.length === 0 && <p className="text-center text-[10px] font-black text-slate-300 uppercase py-10">Nenhum relatório de comunidade</p>}
+                                        ))}
+                                    </div>
+                                    {communityReports.length === 0 && <div className="text-center py-8 bg-slate-50 rounded-3xl"><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Tudo limpo na comunidade</p></div>}
                                 </div>
                             </div>
                         )}
@@ -311,103 +351,9 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                 </div>
                             </div>
                         )}
-
-                        {activeTab === 'sync' && (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="p-8 bg-slate-50 rounded-[3rem] border border-slate-200">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Painel de Sincronização</p>
-                                    <p className="text-xs text-slate-800 font-bold">Use estes botões para importar dados de fontes externas automaticamente. <br />Ex: Buscar vagas de emprego em portais parceiros.</p>
-                                </div>
-                                <div className="bg-slate-900 p-10 rounded-[3.5rem] text-white space-y-10 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-mira-orange/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                                    <div className="relative z-10 space-y-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-4 bg-white/10 rounded-2xl"><RefreshCcw className="text-mira-orange" /></div>
-                                            <div>
-                                                <h4 className="text-2xl font-black tracking-tighter uppercase">Painel de Pipelines</h4>
-                                                <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Sincronização Massiva de Dados</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <button
-                                                disabled={isSyncing}
-                                                onClick={async () => {
-                                                    setIsSyncing(true);
-                                                    setMessage({ text: 'Iniciando Pipeline de Vagas...', type: 'success' });
-                                                    try {
-                                                        const jobsToUpsert = PROTECTED_JOBS.map(job => ({
-                                                            id: job.id,
-                                                            title: job.title,
-                                                            location: job.location,
-                                                            source_name: job.sourceName,
-                                                            source_url: job.sourceUrl,
-                                                            date_posted: job.datePosted,
-                                                            tags: job.tags,
-                                                            category: job.category,
-                                                            work_topic: job.workTopic
-                                                        }));
-                                                        const { error } = await supabase.from('job_posts').upsert(jobsToUpsert, { onConflict: 'id' });
-                                                        if (error) throw error;
-                                                        setMessage({ text: `Pipeline VAGAS concluído (${PROTECTED_JOBS.length} novas inserções)`, type: 'success' });
-                                                    } catch (err: any) {
-                                                        console.error(err);
-                                                        setMessage({ text: 'Erro ao sincronizar vagas.', type: 'error' });
-                                                    } finally {
-                                                        setIsSyncing(false);
-                                                    }
-                                                }}
-                                                className="group p-10 bg-white/5 border border-white/10 rounded-[2.5rem] text-left hover:bg-white/10 transition-all relative"
-                                            >
-                                                <Briefcase className="text-mira-orange mb-6 group-hover:scale-110 transition-transform" size={32} />
-                                                <p className="font-black text-white text-lg tracking-tight uppercase">Sincronizar Vagas</p>
-                                                <p className="text-[10px] text-white/40 font-bold uppercase mt-2">API: IEFP / Indeed / LinkedIn</p>
-                                                {isSyncing && <div className="absolute inset-0 bg-slate-900/60 rounded-[2.5rem] flex items-center justify-center"><RefreshCcw className="animate-spin text-white" /></div>}
-                                            </button>
-
-                                            <button
-                                                disabled={isSyncing}
-                                                onClick={async () => {
-                                                    setIsSyncing(true);
-                                                    setMessage({ text: 'Atualizando Base de Serviços...', type: 'success' });
-                                                    try {
-                                                        const servicesToUpsert = PROTECTED_SERVICES.map(s => ({
-                                                            id: s.id,
-                                                            title: s.title,
-                                                            category: s.category,
-                                                            lat: s.lat,
-                                                            lng: s.lng,
-                                                            address: s.address,
-                                                            city: s.city,
-                                                            phone: s.phone,
-                                                            email: s.email,
-                                                            website: s.website,
-                                                            avg_rating: s.avgRating
-                                                        }));
-                                                        const { error } = await supabase.from('map_alerts').upsert(servicesToUpsert, { onConflict: 'id' });
-                                                        if (error) throw error;
-                                                        setMessage({ text: `Serviços Local-Gov Sincronizados (${PROTECTED_SERVICES.length} entidades)`, type: 'success' });
-                                                    } catch (err: any) {
-                                                        console.error(err);
-                                                        setMessage({ text: 'Erro ao sincronizar serviços.', type: 'error' });
-                                                    } finally {
-                                                        setIsSyncing(false);
-                                                    }
-                                                }}
-                                                className="group p-10 bg-white/5 border border-white/10 rounded-[2.5rem] text-left hover:bg-white/10 transition-all"
-                                            >
-                                                <MapIcon className="text-mira-blue-light mb-6 group-hover:scale-110 transition-transform" size={32} />
-                                                <p className="font-black text-white text-lg tracking-tight uppercase">Sincronizar Serviços</p>
-                                                <p className="text-[10px] text-white/40 font-bold uppercase mt-2">DB: AIMA / SNS / SEF-DATA</p>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     );
 };

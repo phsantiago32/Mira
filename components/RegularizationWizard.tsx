@@ -1,25 +1,13 @@
-
 // src/components/RegularizationWizard.tsx
 import React, { useState, useMemo } from "react";
 import {
     ChevronRight, ArrowLeft, CheckCircle2, FileText, Info,
-    Landmark, AlertCircle, BookOpen, Star, HelpCircle, Volume2
+    Landmark, AlertCircle, Star, HelpCircle, Volume2, UserX, UserCheck, Briefcase, GraduationCap, Users
 } from "lucide-react";
 import { t } from "../utils/translations";
 import { audioService } from "../services/audioService";
 import { templates } from "../utils/documentsDatabase";
 import { TranslatedText } from "./TranslatedText";
-
-/**
- * RegularizationWizard
- * - Atualizado em 2026: inclui direções corretas (AIMA, CRUE, vistos consulares, D.Nomad, Reagrupamento, Trabalho, Estudo)
- * - Saídas:
- *    - checklist.steps (texto)
- *    - checklist.docs (IDs de template)
- *    - flags (needsConsularVisa, needsAIMAAppointment)
- *
- * IMPORTANTE: os IDs dos templates devem existir em ../utils/documentsDatabase
- */
 
 interface WizardProps {
     language: string;
@@ -27,8 +15,9 @@ interface WizardProps {
     onGoToDocs: () => void;
 }
 
+type SituationId = "legal" | "irregular" | "contract" | "student" | "family";
 type OriginId = "cplp" | "eu" | "other";
-type PurposeId = "work" | "family" | "study" | "nomad" | "other";
+type PurposeId = "art88" | "art89" | "art90a" | "art122" | "humanitarian";
 
 const OFFICIAL_LINKS = {
     AIMA: "https://aima.gov.pt",
@@ -37,160 +26,162 @@ const OFFICIAL_LINKS = {
     SNS: "https://www.sns.gov.pt"
 };
 
-// Mapeamento de templates (IDs devem bater com documentsDatabase)
-// Ajusta esses IDs conforme teu banco de templates
 const TEMPLATE_META: Record<string, string> = {
-    aima_ar_temp: "Autorização de Residência - Pedido Inicial (AIMA)",
-    aima_renewal: "Pedido de Renovação de AR (AIMA)",
-    crue_req: "Registo de Cidadão UE (CRUE) - Formulário Câmara",
-    nif_req: "Pedido de NIF (Finanças)",
-    ss_niss: "Pedido de NISS (Segurança Social)",
-    aima_dec_sustento: "Declaração de Sustento (AIMA)",
-    aima_dec_alojamento: "Declaração de Alojamento (Proprietário)",
-    aima_dec_responsabilidade: "Declaração de Responsabilidade (Reagrupamento)",
-    certidao_civil_req: "Requerimento de Certidão Civil (IRN)",
-    work_contract_template: "Modelo de Contrato/Proposta de Emprego",
-    nomad_income_proof: "Comprovativo de Rendimentos / Declaração"
+    aima_ar_temp: "aima_ar_temp",
+    aima_renewal: "aima_renewal",
+    crue_req: "crue_req",
+    nif_req: "nif_req",
+    ss_niss: "ss_niss",
+    aima_dec_sustento: "aima_dec_sustento",
+    aima_dec_alojamento: "aima_dec_alojamento",
+    aima_dec_responsabilidade: "aima_dec_responsabilidade",
+    certidao_civil_req: "certidao_civil_req",
+    work_contract_template: "work_contract_template",
+    nomad_income_proof: "nomad_income_proof",
+    aima_deferimento_tacito: "aima_deferimento_tacito",
+    aima_audiencia_previa: "aima_audiencia_previa",
+    promessa_trabalho_art88: "promessa_trabalho_art88",
+    sef_declaracao_entrada: "sef_declaracao_entrada"
 };
 
 export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelectTemplate, onGoToDocs }) => {
     const [step, setStep] = useState<number>(1);
     const [answers, setAnswers] = useState<Record<string, string>>({});
-    const [noteAccepted, setNoteAccepted] = useState<boolean>(false);
 
     const handleAnswer = (key: string, value: string) => {
         setAnswers(prev => ({ ...prev, [key]: value }));
-        setStep(prev => Math.min(prev + 1, 3));
+        audioService.playClick();
+        setStep(prev => prev + 1);
+    };
+
+    const handleBack = () => {
+        if (step > 1) {
+            setStep(prev => prev - 1);
+            audioService.playClick();
+        }
     };
 
     const resetWizard = () => {
         setStep(1);
         setAnswers({});
-        setNoteAccepted(false);
+        audioService.playClick();
     };
 
-    // lógica para gerar checklist - mais detalhada e com flags
     const getChecklist = useMemo(() => {
+        const sit = answers.situation as SituationId | undefined;
         const origin = answers.origin as OriginId | undefined;
         const purpose = answers.purpose as PurposeId | undefined;
 
         const result = {
-            title: t('wiz_fallback_title', language),
-            desc: t('wiz_fallback_desc', language),
+            title: t("wiz_fallback_title", language),
+            desc: t("wiz_fallback_desc", language),
             steps: [
-                t('wiz_fallback_step1', language),
-                t('wiz_fallback_step2', language),
-                t('wiz_fallback_step3', language)
+                t("wiz_fallback_step1", language),
+                t("wiz_fallback_step2", language),
+                t("wiz_fallback_step3", language)
             ],
-            docs: ["nif_req", "ss_niss", "aima_ar_temp"],
+            docs: ["nif_req", "ss_niss"],
             needsConsularVisa: false,
             needsAIMAAppointment: true,
-            infoNote: t('wiz_fallback_info', language)
+            infoNote: ""
         };
 
         if (origin === "eu") {
-            result.title = t('wiz_eu_title', language);
-            result.desc = t('wiz_eu_desc', language);
-            result.steps = [
-                t('wiz_eu_step1', language),
-                t('wiz_eu_step2', language),
-                t('wiz_eu_step3', language)
-            ];
-            result.docs = ["crue_req", "nif_req", "aima_dec_alojamento"];
-            result.needsConsularVisa = false;
+            result.title = t("wiz_eu_title", language);
+            result.desc = t("wiz_eu_desc", language);
+            result.steps = [t("wiz_eu_step1", language), t("wiz_eu_step2", language), t("wiz_eu_step3", language)];
+            result.docs = ["crue_req", "nif_req"];
             result.needsAIMAAppointment = false;
-            result.infoNote = t('wiz_eu_info', language);
-            return result;
-        }
-
-        if (origin === "cplp") {
-            result.title = t('wiz_cplp_title', language);
-            result.desc = t('wiz_cplp_desc', language);
-            result.steps = [
-                t('wiz_cplp_step1', language),
-                t('wiz_cplp_step2', language),
-                t('wiz_cplp_step3', language)
-            ];
-            result.docs = ["nif_req", "ss_niss", "aima_dec_alojamento", "aima_dec_sustento"];
+        } else if (purpose === "art88") {
+            result.title = t("wiz_work_title", language);
+            result.desc = t("wiz_work_desc", language);
+            result.steps = [t("wiz_work_step1", language), t("wiz_work_step2", language), t("wiz_work_step3", language)];
+            result.docs = ["promessa_trabalho_art88", "ss_niss", "sef_declaracao_entrada"];
+            result.needsConsularVisa = (sit === "irregular");
+        } else if (purpose === "art89") {
+            result.title = t("wiz_work_title", language);
+            result.desc = t("wiz_work_desc", language);
+            result.steps = [t("wiz_work_step1", language), t("wiz_work_step2", language), t("wiz_work_step3", language)];
+            result.docs = ["nif_req", "ss_niss"];
+            result.needsConsularVisa = (sit === "irregular");
+        } else if (sit === "irregular") {
+            result.title = t("wiz_fallback_title", language);
+            result.desc = t("wiz_fallback_desc", language);
+            result.steps = [t("wiz_fallback_step1", language), t("wiz_fallback_step2", language), t("wiz_fallback_step3", language)];
+            result.docs = ["promessa_trabalho_art88", "ss_niss", "sef_declaracao_entrada"];
             result.needsConsularVisa = true;
-            result.needsAIMAAppointment = true;
-            result.infoNote = t('wiz_cplp_info', language);
-            return result;
-        }
-
-        if (purpose === "work") {
-            result.title = t('wiz_work_title', language);
-            result.desc = t('wiz_work_desc', language);
-            result.steps = [
-                t('wiz_work_step1', language),
-                t('wiz_work_step2', language),
-                t('wiz_work_step3', language)
-            ];
-            result.docs = ["work_contract_template", "ss_niss", "nif_req", "aima_ar_temp"];
-            result.needsConsularVisa = answers['enteredWithVisa'] === 'no' ? false : true;
-            result.needsAIMAAppointment = true;
-            result.infoNote = t('wiz_work_info', language);
-            return result;
-        }
-
-        if (purpose === "family") {
-            result.title = t('wiz_family_title', language);
-            result.desc = t('wiz_family_desc', language);
-            result.steps = [
-                t('wiz_family_step1', language),
-                t('wiz_family_step2', language),
-                t('wiz_family_step3', language)
-            ];
+        } else if (purpose === "art90a") {
+            result.title = t("wiz_nomad_title", language);
+            result.desc = t("wiz_nomad_desc", language);
+            result.steps = [t("wiz_nomad_step1", language), t("wiz_nomad_step2", language), t("wiz_nomad_step3", language)];
+            result.docs = ["nomad_income_proof", "nif_req"];
+        } else if (purpose === "art122" || sit === "family") {
+            result.title = t("wiz_family_title", language);
+            result.desc = t("wiz_family_desc", language);
+            result.steps = [t("wiz_family_step1", language), t("wiz_family_step2", language), t("wiz_family_step3", language)];
             result.docs = ["aima_dec_responsabilidade", "aima_dec_alojamento", "certidao_civil_req"];
-            result.needsConsularVisa = true;
-            result.needsAIMAAppointment = true;
-            result.infoNote = t('wiz_family_info', language);
-            return result;
+        } else if (purpose === "humanitarian") {
+            result.title = t("wiz_fallback_title", language); // Or specific humanitarian keys if added
+            result.desc = "Regime de asilo e proteção especial.";
+            result.steps = ["Dirigir-se ao CPR ou balcão de Asilo da AIMA", "Pedir NISS e apoio social"];
+            result.docs = ["ss_niss"];
         }
 
-        if (purpose === "study") {
-            result.title = t('wiz_study_title', language);
-            result.desc = t('wiz_study_desc', language);
-            result.steps = [
-                t('wiz_study_step1', language),
-                t('wiz_study_step2', language),
-                t('wiz_study_step3', language)
-            ];
-            result.docs = ["nif_req", "aima_dec_sustento", "certidao_civil_req"];
-            result.needsConsularVisa = true;
-            result.needsAIMAAppointment = true;
-            result.infoNote = t('wiz_study_info', language);
-            return result;
+        // Tactical additions
+        if (sit === "contract" || sit === "student") {
+            if (!result.docs.includes("aima_deferimento_tacito")) {
+                result.docs.push("aima_deferimento_tacito");
+            }
         }
 
-        if (purpose === "nomad") {
-            result.title = t('wiz_nomad_title', language);
-            result.desc = t('wiz_nomad_desc', language);
-            result.steps = [
-                t('wiz_nomad_step1', language),
-                t('wiz_nomad_step2', language),
-                t('wiz_nomad_step3', language)
-            ];
-            result.docs = ["nomad_income_proof", "nif_req", "aima_ar_temp"];
-            result.needsConsularVisa = true;
-            result.needsAIMAAppointment = true;
-            result.infoNote = t('wiz_nomad_info', language);
-            return result;
+        if (!result.docs.includes("aima_audiencia_previa")) {
+            result.docs.push("aima_audiencia_previa");
         }
 
         return result;
     }, [answers, language]);
 
-    // Helper: obter nome do template
     const getTemplateName = (id: string) => {
-        if (TEMPLATE_META[id]) return TEMPLATE_META[id];
-        const found = templates.find((t: any) => t.id === id);
-        return found ? found.title : id;
+        const key = TEMPLATE_META[id] || id;
+        return t(key, language);
     };
 
-    // Render Step 1 (Origin)
     const renderStep1 = () => (
         <div className="space-y-6 animate-in slide-in-from-bottom duration-500">
+            <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">
+                    {t("wizard_step0_q", language)}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">
+                    {t("wizard_step0_h", language)}
+                </p>
+            </div>
+            <div className="grid gap-3">
+                {[
+                    { id: 'legal', label: t("wiz_sit_legal", language), icon: <UserCheck className="text-green-500" /> },
+                    { id: 'irregular', label: t("wiz_sit_irregular", language), icon: <UserX className="text-red-500" /> },
+                    { id: 'contract', label: t("wiz_sit_contract", language), icon: <Briefcase className="text-blue-500" /> },
+                    { id: 'student', label: t("wiz_sit_student", language), icon: <GraduationCap className="text-mira-orange" /> },
+                    { id: 'family', label: t("wiz_sit_family", language), icon: <Users className="text-pink-500" /> }
+                ].map(opt => (
+                    <button
+                        key={opt.id}
+                        onClick={() => handleAnswer('situation', opt.id)}
+                        className="flex items-center gap-4 p-5 bg-slate-50 border border-slate-100 rounded-[2rem] hover:border-mira-orange hover:bg-white transition-all text-left group"
+                    >
+                        <div className="p-3 bg-white rounded-2xl shadow-sm group-hover:scale-110 transition-transform">{opt.icon}</div>
+                        <span className="text-xs font-black text-slate-700 uppercase tracking-tight">{opt.label}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+
+    const renderStep2 = () => (
+        <div className="space-y-6 animate-in slide-in-from-right duration-500">
+            <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-mira-orange transition-colors">
+                <ArrowLeft size={14} /> {t('back', language) || 'Voltar'}
+            </button>
             <div className="space-y-2">
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{t('wizard_step1_q', language)}</h3>
                 <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">{t('wizard_step1_h', language)}</p>
@@ -204,7 +195,6 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
                     <button
                         key={opt.id}
                         onClick={() => handleAnswer('origin', opt.id)}
-                        aria-label={opt.label}
                         className="flex items-center gap-4 p-5 bg-slate-50 border border-slate-100 rounded-[2rem] hover:border-mira-orange hover:bg-white transition-all text-left group"
                     >
                         <div className="p-3 bg-white rounded-2xl shadow-sm group-hover:scale-110 transition-transform">{opt.icon}</div>
@@ -215,28 +205,30 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
         </div>
     );
 
-    // Render Step 2 (Purpose)
-    const renderStep2 = () => (
+    const renderStep3 = () => (
         <div className="space-y-6 animate-in slide-in-from-right duration-500">
-            <button onClick={() => setStep(1)} className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-mira-orange transition-colors">
+            <button onClick={handleBack} className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-mira-orange transition-colors">
                 <ArrowLeft size={14} /> {t('back', language) || 'Voltar'}
             </button>
             <div className="space-y-2">
-                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">{t('wizard_step2_q', language)}</h3>
-                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">{t('wizard_step2_h', language)}</p>
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">
+                    {t("wizard_step3_q", language)}
+                </h3>
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">
+                    {t("wizard_step3_h", language)}
+                </p>
             </div>
             <div className="grid gap-3">
                 {[
-                    { id: 'work', label: t('wizard_step2_work', language), icon: <CheckCircle2 className="text-green-500" /> },
-                    { id: 'family', label: t('wizard_step2_family', language), icon: <CheckCircle2 className="text-pink-500" /> },
-                    { id: 'study', label: t('wizard_step2_study', language), icon: <CheckCircle2 className="text-mira-blue" /> },
-                    { id: 'nomad', label: t('wizard_step2_nomad', language), icon: <CheckCircle2 className="text-purple-500" /> },
-                    { id: 'other', label: t('wizard_step2_other', language), icon: <HelpCircle className="text-slate-400" /> }
+                    { id: 'art88', label: t("wiz_purp_art88", language), icon: <CheckCircle2 className="text-green-500" /> },
+                    { id: 'art89', label: t("wiz_purp_art89", language), icon: <CheckCircle2 className="text-blue-500" /> },
+                    { id: 'art90a', label: t("wiz_purp_art90a", language), icon: <CheckCircle2 className="text-purple-500" /> },
+                    { id: 'art122', label: t("wiz_purp_art122", language), icon: <CheckCircle2 className="text-pink-500" /> },
+                    { id: 'humanitarian', label: t("wiz_purp_humanitarian", language), icon: <HelpCircle className="text-slate-400" /> }
                 ].map(opt => (
                     <button
                         key={opt.id}
                         onClick={() => handleAnswer('purpose', opt.id)}
-                        aria-label={opt.label}
                         className="flex items-center gap-4 p-5 bg-slate-50 border border-slate-100 rounded-[2rem] hover:border-mira-orange hover:bg-white transition-all text-left group"
                     >
                         <div className="p-3 bg-white rounded-2xl shadow-sm group-hover:scale-110 transition-transform">{opt.icon}</div>
@@ -247,7 +239,6 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
         </div>
     );
 
-    // Render Step 3 (Result & Checklist)
     const renderResult = () => {
         const checklist = getChecklist;
         return (
@@ -260,19 +251,26 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
                         <p className="text-[10px] font-black uppercase tracking-[0.2em]">{checklist.title}</p>
                     </div>
                     <p className="mt-6 text-[11px] text-slate-300 font-bold uppercase leading-relaxed">{checklist.desc}</p>
+
                     {checklist.infoNote && (
-                        <p className="mt-3 text-[10px] text-slate-300">
-                            <Info className="inline mr-2" /> {checklist.infoNote}
-                        </p>
+                        <div className="mt-4 p-4 bg-white/5 border border-white/10 rounded-[1.5rem]">
+                            <p className="text-[11px] text-white font-bold leading-relaxed flex items-start gap-3">
+                                <Info className="text-mira-orange mt-0.5 shrink-0" size={16} />
+                                {checklist.infoNote}
+                            </p>
+                        </div>
                     )}
                     {checklist.needsConsularVisa && (
-                        <div className="mt-3 p-3 bg-yellow-50 text-yellow-800 rounded-xl flex gap-3 items-center">
-                            <AlertCircle /> <span className="text-xs font-bold">{t('wizard_consular_visa_alert', language)}</span>
+                        <div className="mt-4 p-4 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-[1.5rem] flex gap-3 items-start">
+                            <AlertCircle className="mt-0.5 shrink-0" size={16} />
+                            <span className="text-[11px] font-bold leading-relaxed">
+                                {t('wizard_consular_visa_alert', language)}
+                            </span>
                         </div>
                     )}
                 </div>
 
-                <div className="space-y-6" aria-live="polite">
+                <div className="space-y-6">
                     <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] border-l-4 border-mira-orange pl-3">{t('wizard_mandatory_steps_title', language)}</h3>
                     <div className="grid gap-3">
                         {checklist.steps.map((s, i) => (
@@ -313,7 +311,7 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
                                     <div className="flex flex-col gap-0.5 min-w-0">
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t('wizard_view_fill_template', language)}</span>
                                         <span className="text-[10px] font-extrabold text-slate-700 uppercase tracking-tight truncate leading-tight group-hover:text-mira-blue transition-colors">
-                                            <TranslatedText text={getTemplateName(docId)} language={language} />
+                                            {getTemplateName(docId)}
                                         </span>
                                     </div>
                                 </div>
@@ -323,15 +321,11 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
                     </div>
                 </div>
 
-                <div className="flex gap-3">
-                    {/* Botões remover conforme pedido do usuário */}
-                </div>
-
                 <button
                     onClick={resetWizard}
                     className="w-full py-5 rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:border-mira-orange hover:text-mira-orange transition-all"
                 >
-                    {t('wizard_reset', language) || 'Refazer Diagnóstico'}
+                    {t('wizard_reset', language)}
                 </button>
             </div>
         );
@@ -342,16 +336,25 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
             <div className="p-8 pb-32">
                 {step === 1 && renderStep1()}
                 {step === 2 && renderStep2()}
-                {step === 3 && renderResult()}
+                {step === 3 && renderStep3()}
+                {step === 4 && renderResult()}
             </div>
-            {/* Footer note: short official guidance + links */}
-            <div className="p-4 bg-white border-t text-[11px] text-slate-500">
-                <p>
-                    <strong>{t('wizard_footer_note_label', language) || 'Nota:'}</strong> {t('wizard_footer_note_text', language)}
-                </p>
-                <p className="mt-2">
-                    <a href={OFFICIAL_LINKS.AIMA} target="_blank" rel="noreferrer" className="text-mira-blue underline">{t('link_aima_info', language)}</a> · <a href={OFFICIAL_LINKS.GOV_PT_RESIDENCE} target="_blank" rel="noreferrer" className="text-mira-blue underline">{t('link_gov_residence', language)}</a>
-                </p>
+            {/* Footer note */}
+            <div className="p-4 bg-white border-t text-[11px] text-slate-500 flex flex-col gap-3">
+                <div className="p-3 bg-red-50 text-red-800 rounded-xl border border-red-100">
+                    <p className="text-[9px] font-bold leading-relaxed text-center italic">
+                        {t('general_disclaimer_note', language)}
+                    </p>
+                </div>
+                <div>
+                    <p>
+                        <strong>{t('wizard_footer_note_label', language)}</strong> {t('wizard_footer_note_text', language)}
+                    </p>
+                    <div className="mt-2 flex gap-4 text-[10px] font-bold uppercase tracking-tight">
+                        <a href={OFFICIAL_LINKS.AIMA} target="_blank" rel="noreferrer" className="text-mira-blue hover:underline decoration-2 underline-offset-4">Portal AIMA</a>
+                        <a href={OFFICIAL_LINKS.GOV_PT_RESIDENCE} target="_blank" rel="noreferrer" className="text-mira-blue hover:underline decoration-2 underline-offset-4">CNAIM</a>
+                    </div>
+                </div>
             </div>
         </div>
     );

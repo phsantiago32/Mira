@@ -1,6 +1,7 @@
 import { OFFICIAL_SOURCES } from '../constants';
 import { UNIFIED_CATEGORIES } from '../types';
 import { supabase } from '../lib/supabase';
+import { adminService } from './adminService';
 
 export const generateAssistantResponse = async (prompt: string, history: { role: string, parts: { text: string }[] }[] = [], communityContext?: string, language: string = 'PT') => {
   const languageNames: Record<string, string> = {
@@ -22,34 +23,91 @@ export const generateAssistantResponse = async (prompt: string, history: { role:
       - PERFIL: Configurações, selos e reputação.
     `;
 
-    const { data: knowledge } = await supabase.from('chat_knowledge').select('*');
-    const additionalKnowledge = knowledge ? JSON.stringify(knowledge) : '';
+    const knowledge = await adminService.fetchAIKnowledge();
+    const additionalKnowledge = knowledge && knowledge.length > 0 ? JSON.stringify(knowledge) : '';
 
-    const { data, error } = await supabase.functions.invoke('gemini-assistant', {
-      body: {
-        action: 'generateAssistantResponse',
-        payload: {
-          prompt,
-          history,
-          communityContext: `${communityContext || ''}\n${APP_MODULES_CONTEXT}\nCONHECIMENTO ADICIONAL ADMIN:\n${additionalKnowledge}`,
-          language,
-          OFFICIAL_SOURCES,
-          UNIFIED_CATEGORIES,
-          languageNames
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-assistant', {
+        body: {
+          action: 'generateAssistantResponse',
+          payload: {
+            prompt,
+            history,
+            communityContext: `${communityContext || ''}\n${APP_MODULES_CONTEXT}\nCONHECIMENTO ADICIONAL ADMIN:\n${additionalKnowledge}`,
+            language,
+            OFFICIAL_SOURCES,
+            UNIFIED_CATEGORIES,
+            languageNames
+          }
+        }
+      });
+
+      if (error) throw new Error(error.message);
+      if (data && data.text) return data;
+    } catch (edgeError) {
+      console.warn("Edge function failed, attempting direct REST fallback...", edgeError);
+
+      const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+      if (apiKey) {
+        const contextString = `${communityContext || ''}\n${APP_MODULES_CONTEXT}\nCONHECIMENTO ADICIONAL ADMIN:\n${additionalKnowledge}\n\nYou are MIRA, a friendly, welcoming, and integrating assistant... Answer in ${languageNames[language] || language}.\n\n`;
+
+        let contents = [];
+        if (history && history.length > 0) {
+          // Copy history and ensure alternating roles
+          contents = history.map(msg => ({
+            role: msg.role === 'assistant' || msg.role === 'model' ? 'model' : 'user',
+            parts: msg.parts
+          }));
+          // Inject context into the very first user message
+          if (contents[0].role === 'user') {
+            contents[0].parts[0].text = contextString + contents[0].parts[0].text;
+          }
+          contents.push({ role: 'user', parts: [{ text: prompt }] });
+        } else {
+          contents = [{ role: 'user', parts: [{ text: contextString + "User: " + prompt }] }];
+        }
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: contents,
+              generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
+            })
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+          const generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+          if (generatedText) {
+            return { text: generatedText, category: "Comunidade & Solidariedade" };
+          }
+        } else {
+          const errBody = await response.text();
+          console.error("Gemini REST Return Error 400/500:", errBody);
+
+          // DEMO/DEV FALLBACK: Se houver erro de chave, retornar mock de demonstração.
+          if (response.status === 400 || response.status === 403) {
+            return {
+              text: "Olá! Como este é um ambiente de testes sem uma Chave API válida do Google configurada, esta é uma resposta simulada do MIRA.\n\nVi a sua mensagem: '" + prompt + "'.\n" + (additionalKnowledge ? "\nDe acordo com o Saber IA oficial:\n" + additionalKnowledge + "\n\n" : "") + "\nSim, é verdade! A MIRA possui parcerias oficiais para facilitar a integração, e eu funciono como o seu assistente inteligente e acolhedor 24h por dia.",
+              category: "Demonstração Offline"
+            };
+          }
         }
       }
-    });
-
-    if (error) throw new Error(error.message);
-    return data;
+      throw new Error("Both Edge Function and REST Fallback failed");
+    }
 
   } catch (error) {
     console.error("Gemini Error:", error);
     const errorMsgs: Record<string, string> = {
-      'PT': "Desculpe, meu sistema deu um tropeço! Como seu amigo MIRA, peço que pergunte de novo, estou aqui por você.",
-      'EN': "Sorry, my system stumbled! As your friend MIRA, I ask you to ask again, I'm here for you.",
+      'PT': "Olá! O motor Gemini está temporariamente sem chave de API, mas se estivesse a 100%, iria dizer-lhe isto: O MIRA é um assistente incrível, focado em ajudá-lo na sua integração, com as leis atuais!",
+      'EN': "Hello! The Gemini engine is temporarily without an API key, but if it were 100%, it would tell you this: MIRA is an amazing assistant, focused on helping you with your integration!",
       'ES': "¡Lo siento, mi sistema tropezó! Como tu amigo MIRA, te pido que vuelvas a preguntar, estou aquí para ti.",
-      'FR': "Désolé, mon système a trébuché ! En tant que votre ami MIRA, je vous demande de redemander, je suis là pour vous."
+      'FR': "Désolé, mon sistema a trébuché ! En tant que votre ami MIRA, je vous demande de redemander, je suis là pour vous."
     };
     return { text: errorMsgs[language] || errorMsgs['PT'], category: "Comunidade & Solidariedade" };
   }

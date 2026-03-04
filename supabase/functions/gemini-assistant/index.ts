@@ -27,7 +27,7 @@ serve(async (req) => {
             const categoriesList = UNIFIED_CATEGORIES.join(', ');
 
             const response = await ai.models.generateContent({
-                model: "gemini-3-flash-preview",
+                model: "gemini-1.5-flash",
                 contents: [
                     ...(history || []),
                     { role: "user", parts: [{ text: prompt }] }
@@ -74,7 +74,7 @@ serve(async (req) => {
         if (action === "generateSpeech") {
             const { text, language, voiceMap } = payload;
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash-preview-tts",
+                model: "gemini-1.5-flash", // TTS using standard flash model or appropriate multimodal model
                 contents: [{ parts: [{ text: text }] }],
                 config: {
                     responseModalities: [Modality.AUDIO],
@@ -92,7 +92,7 @@ serve(async (req) => {
         if (action === "autoTranslateText") {
             const { text, targetLanguage, languageNames } = payload;
             const response = await ai.models.generateContent({
-                model: "gemini-3-flash-preview",
+                model: "gemini-1.5-flash",
                 contents: `Detect the original language of the following text. If it is already exactly written natively in ${languageNames[targetLanguage] || 'Português'}, return exactly the same text without any changes. Otherwise, precisely translate it to ${languageNames[targetLanguage]} preserving formatting, emojis, hashtags and tone. Return ONLY the translated or original text, without any conversational fill or quotes:\n\n${text}`
             });
             return new Response(JSON.stringify({ text: response.text.trim() }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -101,7 +101,7 @@ serve(async (req) => {
         if (action === "generateAdvancedReport") {
             const { logsSummary } = payload;
             const response = await ai.models.generateContent({
-                model: "gemini-3-pro-preview",
+                model: "gemini-1.5-pro",
                 contents: `Gere um relatório estratégico de padrões migratórios. Dados: ${logsSummary}`,
                 config: {
                     systemInstruction: "Você é um Cientista de Dados Sênior especializado em Migração Europeia. Relatórios devem ser concisos, profissionais e baseados em dados.",
@@ -113,8 +113,9 @@ serve(async (req) => {
         if (action === "searchOfficialDocumentInfo") {
             const { documentName } = payload;
             const response = await ai.models.generateContent({
-                model: "gemini-3-flash-preview",
+                model: "gemini-1.5-flash",
                 contents: `Procure informações sobre o documento "${documentName}" para 2026 em Portugal. Retorne os campos necessários para uma minuta.`,
+
                 config: {
                     responseMimeType: "application/json",
                     responseSchema: {

@@ -6,12 +6,14 @@ import { MAP_CATEGORIES, MapAlert } from '../types';
 import { t } from '../utils/translations';
 import { audioService } from '../services/audioService';
 import { PROTECTED_SERVICES } from '../utils/protectedData';
+import { useToast } from './Toast';
 
 interface LocalServicesListProps {
     language: string;
 }
 
 export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }) => {
+    const { showToast } = useToast();
     const [services, setServices] = useState<MapAlert[]>([]);
     const [filteredServices, setFilteredServices] = useState<MapAlert[]>([]);
     const [loading, setLoading] = useState(true);
@@ -226,11 +228,11 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                 fetchReviewsForService(serviceName);
             }
 
-            alert(t('service_rate_success', language));
+            showToast(t('service_rate_success', language) || "Avaliação enviada com sucesso!", 'success');
             setRatingModalOpen(false);
         } catch (err) {
             console.error('Rate error:', err);
-            alert(t('service_rate_success', language));
+            showToast("Erro ao enviar avaliação. Tente novamente.", 'error');
             setRatingModalOpen(false);
         } finally {
             setIsSubmitting(false);
@@ -253,11 +255,11 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
         try {
             const { submitReportRest } = await import('../services/reportService');
             await submitReportRest('service_queue', `Serviço: Serviço ID ${serviceIdForUpdate}\nFila reportada como: ${statusForUpdate.toUpperCase()}`);
-            alert(t('service_queue_reported', language));
+            showToast(t('service_queue_reported', language) || "Estado da fila atualizado!", 'success');
             setQueueModalOpen(false);
         } catch (err) {
             console.error('Queue report exception:', err);
-            alert(t('service_queue_reported', language));
+            showToast("Erro ao atualizar fila. Tente novamente.", 'error');
             setQueueModalOpen(false);
         } finally {
             setIsSubmitting(false);
@@ -283,84 +285,90 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
     }, [searchTerm, selectedCategory, services]);
 
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50/50 font-['Plus_Jakarta_Sans'] pb-24">
+        <div className="flex flex-col min-h-screen bg-white font-['Plus_Jakarta_Sans'] pb-24">
             {/* Header Modernizado */}
-            <div className="bg-white px-8 pt-12 pb-10 rounded-b-[4rem] shadow-sm border-b border-slate-100 flex flex-col gap-8">
+            <div className="bg-white px-6 pt-8 pb-4 space-y-6 z-30 border-b border-slate-50">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="space-y-1">
-                        <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+                        <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">
                             {t('service_guide_title', language)}
                         </h2>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                            {t('service_guide_subtitle', language)}
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-mira-blue animate-pulse"></div>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                {t('service_guide_subtitle', language)}
+                            </p>
+                        </div>
                     </div>
                     <button
                         onClick={() => fetchServices()}
-                        className="p-4 bg-slate-50 text-slate-400 hover:text-mira-orange hover:bg-mira-orange/5 rounded-2xl transition-all active:rotate-180 duration-700 w-full sm:w-auto flex justify-center shrink-0"
+                        className="p-3 bg-slate-50 text-slate-400 hover:text-mira-blue hover:bg-mira-blue/5 rounded-2xl transition-all active:rotate-180 duration-500 w-full sm:w-auto flex justify-center shrink-0 border border-slate-100"
                     >
                         <RefreshCcw size={22} className={loading ? 'animate-spin' : ''} />
                     </button>
                 </div>
 
-                <div className="flex flex-col gap-4">
-                    <div className="relative group">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-orange transition-colors" size={20} />
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative group flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-blue transition-colors" size={20} />
                         <input
                             type="text"
                             placeholder={t('service_search_place', language)}
-                            className="w-full pl-14 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-[2rem] text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-mira-orange transition-all shadow-inner"
+                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-900 outline-none focus:bg-white focus:border-mira-blue transition-all shadow-sm"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <div className="relative group">
-                        <Filter className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-orange transition-colors pointer-events-none" size={18} />
+                    <div className="relative group flex-1">
+                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-blue transition-colors pointer-events-none" size={18} />
                         <select
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full pl-14 pr-12 py-5 bg-slate-50 border-2 border-transparent rounded-[2rem] text-xs font-black uppercase tracking-widest text-slate-900 outline-none focus:bg-white focus:border-mira-orange transition-all shadow-inner appearance-none cursor-pointer"
+                            className="w-full pl-12 pr-10 py-5 sm:py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-900 outline-none focus:bg-white focus:border-mira-blue transition-all shadow-sm appearance-none cursor-pointer"
                         >
                             <option value="Todos">{t('map_all_areas', language)}</option>
                             {Array.from(new Set(services.map(s => s.category))).sort().map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                     </div>
                 </div>
             </div>
 
-            {/* Grid de Serviços Premium */}
-            <div className="p-8 pb-32">
+
+            {/* Grid de Serviços */}
+            <div className="px-6 space-y-6 pb-10 mt-4">
                 {loading && services.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full space-y-4">
-                        <div className="w-10 h-10 border-4 border-mira-orange border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-[10px] font-black uppercase text-slate-300 tracking-[0.4em]">{t('service_loading', language)}</p>
+                    <div className="flex flex-col items-center justify-center py-20 space-y-6 animate-pulse">
+                        <div className="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-200">
+                            <Building2 size={40} />
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300">{t('service_loading', language)}</p>
                     </div>
                 ) : filteredServices.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-6">
+                    <div className="grid grid-cols-1 gap-5">
                         {filteredServices.map((service) => (
-                            <div key={service.id} className="bg-white p-8 rounded-[3.5rem] border border-slate-100 shadow-sm hover:shadow-2xl transition-all group relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-mira-orange/5"></div>
+                            <div key={service.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-mira-blue hover:shadow-xl hover:shadow-blue-100/30 transition-all cursor-pointer group active:scale-[0.98] relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full blur-[40px] -mr-12 -mt-12 transition-all group-hover:bg-mira-blue/10"></div>
 
                                 <div className="relative z-10 flex flex-col gap-6">
                                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                                         <div className="flex gap-4 items-center">
-                                            <div className="p-4 bg-slate-50 rounded-3xl text-slate-400 group-hover:text-mira-orange group-hover:bg-white transition-all shadow-sm border border-slate-100 shrink-0">
-                                                <Building2 size={24} />
+                                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:text-mira-blue group-hover:bg-white transition-all shadow-sm border border-slate-100 shrink-0">
+                                                <Building2 size={20} />
                                             </div>
                                             <div className="space-y-1">
-                                                <h3 className="text-xl font-black text-slate-900 leading-tight tracking-tight uppercase group-hover:text-mira-orange transition-colors">
+                                                <h3 className="text-lg font-black text-slate-900 leading-tight tracking-tight uppercase group-hover:text-mira-blue transition-colors line-clamp-2">
                                                     {service.title}
                                                 </h3>
                                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="w-2 h-2 rounded-full bg-mira-orange animate-pulse shrink-0"></span>
-                                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{service.category}</span>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-mira-blue animate-pulse shrink-0"></span>
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{service.category}</span>
                                                     </div>
                                                     {queueStatuses[service.id] && (
-                                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border ${queueStatuses[service.id] === 'empty' ? 'bg-mira-green/10 text-mira-green border-mira-green/20' : queueStatuses[service.id] === 'normal' ? 'bg-mira-yellow/10 text-mira-yellow-dark border-mira-yellow/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
+                                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[8px] font-black uppercase tracking-widest shadow-sm border ${queueStatuses[service.id] === 'empty' ? 'bg-mira-green/10 text-mira-green border-mira-green/20' : queueStatuses[service.id] === 'normal' ? 'bg-mira-yellow/10 text-mira-yellow-dark border-mira-yellow/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}>
                                                             <Clock size={10} />
                                                             {queueStatuses[service.id] === 'empty' ? 'Sem Fila' : queueStatuses[service.id] === 'normal' ? 'Fila Normal' : 'Lotado'}
                                                         </div>
@@ -375,13 +383,13 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                     </div>
 
                                     <div className="space-y-3">
-                                        <div className="bg-slate-50/80 p-5 rounded-[2rem] border border-slate-100 flex items-start gap-4">
-                                            <div className="p-3 bg-white rounded-2xl shadow-sm text-mira-orange shrink-0">
-                                                <MapPin size={20} />
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-transparent flex items-start gap-3">
+                                            <div className="w-8 h-8 bg-white rounded-xl shadow-sm text-mira-blue shrink-0 flex items-center justify-center">
+                                                <MapPin size={14} />
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{t('map_located_at', language)}</p>
-                                                <p className="text-xs font-bold text-slate-700 leading-relaxed">
+                                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t('map_located_at', language)}</p>
+                                                <p className="text-[11px] font-bold text-slate-700 leading-relaxed max-w-[90%]">
                                                     {(() => {
                                                         // Extrai qualquer URL que esteja misturada no texto do endereço
                                                         const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
@@ -396,9 +404,9 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
 
                                         <div className="flex flex-wrap gap-2">
                                             {service.phone && (
-                                                <a href={`tel:${service.phone}`} className="flex items-center gap-3 px-5 py-3 bg-white border border-slate-100 rounded-2xl text-slate-600 hover:border-mira-orange transition-all">
-                                                    <Phone size={16} className="text-mira-orange shrink-0" />
-                                                    <span className="text-[10px] font-black tracking-widest">{service.phone}</span>
+                                                <a href={`tel:${service.phone}`} className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-slate-600 hover:border-mira-blue hover:text-mira-blue transition-all">
+                                                    <Phone size={14} className="shrink-0" />
+                                                    <span className="text-[9px] font-black tracking-widest">{service.phone}</span>
                                                 </a>
                                             )}
                                             {(() => {
@@ -409,9 +417,9 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                                 if (finalWebsite) {
                                                     const validUrl = finalWebsite.startsWith('http') ? finalWebsite : `https://${finalWebsite}`;
                                                     return (
-                                                        <a href={validUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 px-5 py-3 bg-white border border-slate-100 rounded-2xl text-mira-blue hover:border-mira-blue transition-all">
-                                                            <Globe size={16} className="shrink-0" />
-                                                            <span className="text-[10px] font-black tracking-widest">Website</span>
+                                                        <a href={validUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-100 rounded-xl text-mira-blue hover:bg-mira-blue hover:text-white transition-all">
+                                                            <Globe size={14} className="shrink-0" />
+                                                            <span className="text-[9px] font-black tracking-widest">Website</span>
                                                         </a>
                                                     );
                                                 }
@@ -421,31 +429,30 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                     </div>
 
                                     {/* BOTOES APROVADOS E FUNCIONAIS */}
-                                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                                         <button
-                                            onClick={() => openRatingModal(service.id)}
-                                            className="group/btn w-full sm:flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-3 bg-mira-blue border border-mira-blue rounded-[1.5rem] text-[10px] sm:text-xs font-black uppercase tracking-widest text-white hover:bg-mira-blue/90 hover:text-white transition-all active:scale-95 shadow-md"
+                                            onClick={(e) => { e.stopPropagation(); openRatingModal(service.id); }}
+                                            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 bg-mira-orange border border-mira-orange rounded-xl text-[9px] font-black uppercase tracking-widest text-white hover:bg-mira-orange-dark shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
                                         >
-                                            <MessageSquare size={14} className="transition-transform group-hover/btn:scale-110 shrink-0" />
+                                            <MessageSquare size={14} className="shrink-0" />
                                             {t('service_rate_btn', language)}
                                         </button>
                                         <button
-                                            onClick={() => openQueueModal(service.id)}
-                                            className="group/btn w-full sm:flex-1 flex items-center justify-center gap-2 py-3.5 sm:py-3 bg-slate-900 border border-slate-900 rounded-[1.5rem] text-[10px] sm:text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 hover:text-white transition-all active:scale-95 shadow-md"
+                                            onClick={(e) => { e.stopPropagation(); openQueueModal(service.id); }}
+                                            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 border border-slate-900 rounded-xl text-[9px] font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all shadow-sm"
                                         >
-                                            <Clock size={14} className="transition-transform group-hover/btn:rotate-12 shrink-0" />
+                                            <Clock size={14} className="shrink-0" />
                                             {t('service_queue_btn', language)}
                                         </button>
                                     </div>
 
-                                    {/* Collapsible Reviews Trigger */}
                                     <button
-                                        onClick={() => toggleServiceExpansion(service)}
-                                        className="w-full flex items-center justify-center py-2 px-1 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-mira-orange transition-colors border-t border-slate-100/50 mt-2"
+                                        onClick={(e) => { e.stopPropagation(); toggleServiceExpansion(service); }}
+                                        className="w-full flex items-center justify-center py-2 px-1 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-mira-blue transition-colors border-t border-slate-50 mt-1"
                                     >
                                         <div className="flex items-center gap-2">
                                             <span>{t('service_read_reviews', language)}</span>
-                                            <ChevronDown size={14} className={`transform transition-transform duration-300 ${expandedServiceId === service.id ? 'rotate-180 text-mira-orange' : ''}`} />
+                                            <ChevronDown size={14} className={`transform transition-transform duration-300 ${expandedServiceId === service.id ? 'rotate-180 text-mira-blue' : ''}`} />
                                         </div>
                                     </button>
 
@@ -460,7 +467,7 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                                     const starMatch = r.subject.match(/\((\d)/);
                                                     const st = starMatch ? parseInt(starMatch[1], 10) : 5;
                                                     return (
-                                                        <div key={r.id} className="bg-slate-50/80 p-5 rounded-3xl border border-slate-100 flex flex-col gap-3">
+                                                        <div key={r.id} className="bg-slate-50 p-4 rounded-2xl border border-transparent flex flex-col gap-2">
                                                             <div className="flex justify-between items-start">
                                                                 <div className="flex gap-1 text-mira-yellow">
                                                                     {[...Array(st)].map((_, i) => <Star key={i} size={12} fill="currentColor" />)}
@@ -474,9 +481,9 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                                     )
                                                 })
                                             ) : (
-                                                <div className="text-center py-6 px-4 bg-slate-50/50 rounded-3xl border border-slate-100/50">
-                                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Sem texto de avaliação</p>
-                                                    <p className="text-[10px] font-bold text-slate-400 mt-2">Ainda não existem comentários detalhados registados para este serviço.</p>
+                                                <div className="text-center py-4 px-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Sem texto de avaliação</p>
+                                                    <p className="text-[10px] font-medium text-slate-400 mt-1">Ainda não existem comentários detalhados registados para este serviço.</p>
                                                 </div>
                                             )}
                                         </div>
@@ -486,9 +493,9 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                         ))}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-full space-y-6 text-center px-12 mt-12 bg-white p-12 rounded-[4rem] border border-slate-100 border-dashed">
-                        <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-                            <Search size={48} />
+                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
+                        <div className="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center text-slate-200">
+                            <Search size={40} />
                         </div>
                         <div className="space-y-2">
                             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{t('service_no_results', language)}</h3>
@@ -496,7 +503,7 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                         </div>
                         <button
                             onClick={() => { setSearchTerm(''); setSelectedCategory('Todos'); }}
-                            className="bg-slate-900 text-white px-10 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-widest shadow-2xl active:scale-95 transition-all"
+                            className="px-8 py-3 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shadow-sm"
                         >
                             {t('service_clear_filters', language)}
                         </button>
@@ -506,8 +513,8 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
 
             {/* Modal de Avaliação */}
             {ratingModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 px-8 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{t('service_rate_modal_title', language)}</h3>
                             <button onClick={() => setRatingModalOpen(false)} className="p-2 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-full transition-colors active:scale-90">
@@ -530,7 +537,7 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                 value={reviewText}
                                 onChange={(e) => setReviewText(e.target.value)}
                                 placeholder="Descreva a sua experiência..."
-                                className="w-full h-32 p-4 bg-slate-50 border-2 border-transparent rounded-[1.5rem] text-sm font-bold text-slate-900 resize-none outline-none focus:bg-white focus:border-mira-orange transition-all placeholder:text-slate-400"
+                                className="w-full h-32 p-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-bold text-slate-900 resize-none outline-none focus:bg-white focus:border-mira-blue transition-all placeholder:text-slate-400"
                             />
                             <button
                                 onClick={submitRating}
@@ -546,8 +553,8 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
 
             {/* Modal de Fila */}
             {queueModalOpen && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 px-8 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                             <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">{t('service_queue_modal_title', language)}</h3>
                             <button onClick={() => setQueueModalOpen(false)} className="p-2 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-full transition-colors active:scale-90">
