@@ -88,7 +88,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white font-['Plus_Jakarta_Sans']">
+        <div className="flex flex-col h-full bg-white font-['Plus_Jakarta_Sans'] overflow-y-auto no-scrollbar">
             {/* Header */}
             <div className="bg-slate-900 text-white p-8 space-y-4">
                 <div className="flex items-center justify-between">
@@ -130,7 +130,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="p-4 sm:p-8 shrink-0 pb-32">
                 {message && (
                     <div className={`mb-8 p-6 rounded-[2rem] border-2 flex items-center gap-4 animate-in slide-in-from-top-4 ${message.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 'bg-red-50 border-red-100 text-red-800'}`}>
                         {message.type === 'success' ? <CheckCircle2 className="shrink-0" size={20} /> : <AlertCircle className="shrink-0" size={20} />}
@@ -163,44 +163,46 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                     </div>
                                 </div>
                                 {users.filter(u => u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || (u.email && u.email.toLowerCase().includes(userSearchTerm.toLowerCase()))).map(u => (
-                                    <div key={u.id} className="p-6 bg-slate-50 rounded-[2.5rem] flex flex-col sm:flex-row items-start sm:items-center justify-between border border-transparent hover:border-slate-200 transition-all gap-4">
-                                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                                    <div key={u.id} className="p-5 sm:p-6 bg-slate-50 rounded-[2rem] flex flex-col items-start justify-between border border-transparent hover:border-slate-200 transition-all gap-4">
+                                        <div className="flex items-center gap-4 w-full">
                                             <img src={u.avatar} className="w-12 h-12 rounded-2xl shadow-sm shrink-0" alt="" />
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-black text-slate-900 text-sm uppercase truncate">{u.name}</p>
                                                 <p className="text-[9px] text-slate-400 font-bold uppercase truncate">{u.email}</p>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-200/50 justify-end mt-2 sm:mt-0">
-                                            {u.email && (
-                                                <button
-                                                    onClick={() => handleAction(() => adminService.blockEmail(u.email!))}
-                                                    className="flex-1 sm:flex-none p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
-                                                    title="Bloquear Email de registrar novamente"
-                                                >
-                                                    <MailX size={18} />
-                                                    <span className="text-[10px] font-bold uppercase tracking-wider sm:hidden">Bloquear Email</span>
-                                                </button>
-                                            )}
+
+                                        <div className="grid grid-cols-3 gap-2 w-full pt-4 border-t border-slate-200/50">
+                                            <button
+                                                onClick={() => { if (u.email) handleAction(() => adminService.blockEmail(u.email!)); else alert('Utilizador sem e-mail.'); }}
+                                                disabled={!u.email}
+                                                className="flex flex-col items-center justify-center p-3 gap-1.5 bg-red-50/60 text-red-500 hover:bg-red-500 hover:text-white rounded-[1.2rem] transition-all disabled:opacity-30 disabled:grayscale shadow-sm active:scale-95 border border-red-100/50"
+                                                title="Bloquear Email de registrar novamente"
+                                            >
+                                                <MailX size={18} />
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-center leading-tight">Banir Email</span>
+                                            </button>
+
                                             <button
                                                 onClick={() => handleAction(() => adminService.toggleBlockUser(u.id, !u.isBlocked))}
-                                                className={`flex-1 sm:flex-none p-3 rounded-xl transition-all flex items-center justify-center gap-2 ${u.isBlocked ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-500 shadow-sm'}`}
-                                                title={u.isBlocked ? "Desbloquear" : "Suspender Usuário"}
+                                                className={`flex flex-col items-center justify-center p-3 gap-1.5 rounded-[1.2rem] transition-all shadow-sm active:scale-95 border ${u.isBlocked ? 'bg-red-600 text-white border-red-700' : 'bg-white text-slate-400 border-slate-200 hover:text-red-500 hover:bg-red-50'}`}
+                                                title={u.isBlocked ? "Desbloquear Conta" : "Suspender Usuário"}
                                             >
                                                 {u.isBlocked ? <ShieldCheck size={18} /> : <Ban size={18} />}
-                                                <span className="text-[10px] font-bold uppercase tracking-wider sm:hidden">{u.isBlocked ? 'Desbloquear' : 'Suspender'}</span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-center leading-tight">{u.isBlocked ? 'Liberar' : 'Suspender'}</span>
                                             </button>
+
                                             <button
                                                 onClick={() => {
-                                                    if (window.confirm('Tem certeza que quer DESSAPARECER com este usuário para sempre?')) {
+                                                    if (window.confirm('Tem certeza que quer EXCLUIR este usuário para sempre?')) {
                                                         handleAction(() => adminService.deleteUser(u.id));
                                                     }
                                                 }}
-                                                className="flex-1 sm:flex-none p-3 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                                                className="flex flex-col items-center justify-center p-3 gap-1.5 bg-red-50/60 text-red-600 hover:bg-red-600 hover:text-white rounded-[1.2rem] transition-all shadow-sm active:scale-95 border border-red-100/50"
                                                 title="Apagar permanentemente"
                                             >
                                                 <Trash2 size={18} />
-                                                <span className="text-[10px] font-bold uppercase tracking-wider sm:hidden">Excluir</span>
+                                                <span className="text-[8px] font-black uppercase tracking-widest text-center leading-tight">Excluir Conta</span>
                                             </button>
                                         </div>
                                     </div>
