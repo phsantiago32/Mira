@@ -250,7 +250,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
     };
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-[#0A162B] via-[#003B75] to-[#0A162B] relative overflow-hidden font-['Plus_Jakarta_Sans']">
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8 sm:p-6 bg-gradient-to-br from-[#0A162B] via-[#003B75] to-[#0A162B] relative overflow-hidden font-['Plus_Jakarta_Sans']">
             <style>
                 {`
 @keyframes flash-mira {
@@ -310,20 +310,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                 </div>
             </div>
 
-            <div className="w-full max-w-md z-10 flex flex-col items-center">
+            <div className="w-full max-w-md z-10 flex flex-col items-center justify-center flex-1">
                 {/* Bloco de Logo Isolado */}
-                <div className="text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="inline-flex w-24 h-24 bg-mira-dark-blue/40 backdrop-blur-3xl rounded-[2.5rem] mb-6 p-4 items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/10 relative overflow-hidden group">
+                <div className="text-center mb-6 sm:mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+                    <div className="inline-flex w-16 h-16 sm:w-24 sm:h-24 bg-mira-dark-blue/40 backdrop-blur-3xl rounded-2xl sm:rounded-[2.5rem] mb-4 sm:mb-6 p-3 sm:p-4 items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/10 relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 rounded-[2.5rem] group-hover:opacity-100 transition-opacity duration-1000"></div>
                         <div className="w-full h-full text-mira-blue-light relative z-10 filter drop-shadow-[0_0_15px_rgba(0,229,255,0.7)]">
                             {MIRA_LOGO}
                         </div>
                     </div>
-                    <h1 className="text-5xl font-black text-white tracking-tighter drop-shadow-md leading-none">MIRA</h1>
-                    <p className="text-white/90 text-[9px] font-bold mt-4 max-w-[280px] mx-auto leading-relaxed uppercase tracking-[0.2em]">{t('auth_slogan', language)}</p>
+                    <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tighter drop-shadow-md leading-none">MIRA</h1>
+                    <p className="text-white/90 text-[8px] sm:text-[9px] font-bold mt-2 sm:mt-4 max-w-[280px] mx-auto leading-relaxed uppercase tracking-[0.2em]">{t('auth_slogan', language)}</p>
                 </div>
 
-                <div className="bg-white/5 backdrop-blur-[60px] w-full p-10 rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden border border-white/10">
+                <div className="bg-white/5 backdrop-blur-[60px] w-full p-6 sm:p-10 rounded-3xl sm:rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8)] relative overflow-hidden border border-white/10">
                     <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-mira-orange via-mira-blue-light to-mira-blue glow-line-animated"></div>
                     <form onSubmit={handleAuth}>
                         {renderForm()}
@@ -332,8 +332,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
 
                 {/* Link de Registro Separado */}
                 {!isForgotPassword && (
-                    <div className="text-center mt-12 mb-6 animate-in fade-in duration-1000">
-                        <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[11px] font-black text-white/90 hover:text-mira-orange transition-colors uppercase tracking-[0.2em] drop-shadow-sm flex items-center gap-3 mx-auto">
+                    <div className="text-center mt-6 sm:mt-12 mb-4 animate-in fade-in duration-1000">
+                        <button type="button" onClick={() => setIsLogin(!isLogin)} className="text-[9px] sm:text-[11px] font-black text-white/90 hover:text-mira-orange transition-colors uppercase tracking-[0.2em] drop-shadow-sm flex items-center gap-3 mx-auto">
                             <span className="w-8 h-px bg-white/20"></span>
                             {isLogin ? t('auth_link_register_new', language) : t('auth_link_already_have_account', language)}
                             <span className="w-8 h-px bg-white/20"></span>
@@ -342,15 +342,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                 )}
 
                 {/* MIRA Lights moved here in the middle */}
-                <div className="flex items-center gap-4 justify-center py-6 mb-8 group cursor-help" title="Conexões Ativas MIRA">
-                    <div className="w-2.5 h-2.5 rounded-full bg-mira-orange dot-flash-1 shadow-[0_0_15px_rgba(249,115,22,1)]"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-mira-blue-light dot-flash-2 shadow-[0_0_15px_rgba(0,229,255,1)]"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-mira-blue dot-flash-3 shadow-[0_0_15px_rgba(0,123,255,1)]"></div>
-                    <div className="w-2.5 h-2.5 rounded-full bg-white/40 dot-flash-4 shadow-[0_0_15px_rgba(255,255,255,1)] border border-white/20"></div>
+                <div className="flex items-center gap-3 sm:gap-4 justify-center py-2 sm:py-6 group cursor-help" title="Conexões Ativas MIRA">
+                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-mira-orange dot-flash-1 shadow-[0_0_15px_rgba(249,115,22,1)]"></div>
+                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-mira-blue-light dot-flash-2 shadow-[0_0_15px_rgba(0,229,255,1)]"></div>
+                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-mira-blue dot-flash-3 shadow-[0_0_15px_rgba(0,123,255,1)]"></div>
+                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white/40 dot-flash-4 shadow-[0_0_15px_rgba(255,255,255,1)] border border-white/20"></div>
                 </div>
             </div>
 
-            <p className="text-[7px] font-black text-white/20 uppercase tracking-[0.5em]">MIRA © 2026 AMANDA SILVA ABREU</p>
+            <p className="text-[7px] font-black text-white/20 uppercase tracking-[0.5em] pb-2 sm:pb-0">MIRA © 2026 AMANDA SILVA ABREU</p>
         </div>
     );
 };

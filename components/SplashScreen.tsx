@@ -49,9 +49,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                     autoPlay
                     playsInline
                     muted={isMuted}
-                    // Mudado de object-cover para object-contain para não cortar as mãos do MIRA no mobile
+                    // Mudado de object-contain para object-fill para ocupar a tela toda sem recortar as mãos no mobile (pode causar leve esticamento)
                     // Adicionamos filtros para cores mais vibrantes e contraste dignos de cinema/tecnologia
-                    className="w-full h-full object-contain saturate-[1.15] contrast-[1.05] brightness-105"
+                    className="w-full h-[100dvh] object-fill saturate-[1.15] contrast-[1.05] brightness-105"
                     onEnded={triggerFadeOut}
                 >
                     <source src="/splash_video.mp4" type="video/mp4" />
