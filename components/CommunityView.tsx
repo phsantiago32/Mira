@@ -449,34 +449,36 @@ const CommunityView: React.FC<CommunityViewProps> = ({
         </div>
       )}
 
-      <div className="bg-white px-6 pt-8 pb-4 space-y-4 border-b border-slate-100 z-30 shadow-sm">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <button onClick={() => onViewChange(ViewType.PROFILE)} className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-mira-orange-pastel shadow-sm active:scale-90 transition-transform">
-              <img src={user.avatar} className="w-full h-full object-cover" alt="Perfil" referrerPolicy="no-referrer" />
-            </button>
-            <div><h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">COMUNIDADE MIRA</h2></div>
-          </div>
-          <button onClick={() => setShowCreateModal(true)} className="w-12 h-12 bg-gradient-to-br from-mira-orange to-red-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100 active:scale-90 transition-all">
-            <Plus size={24} strokeWidth={3} />
-          </button>
-        </div>
-        <div className="space-y-3">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-orange transition-colors" size={18} />
-            <input type="text" placeholder={t('comm_search', language) || "Pesquisar..."} value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:border-mira-orange outline-none transition-all shadow-inner" />
-          </div>
-          <div className="relative group">
-            <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="w-full pl-6 pr-10 py-3.5 bg-white border-2 border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest appearance-none outline-none focus:border-mira-orange shadow-sm transition-all">
-              <option value="Todos">{t('comm_all_cats', language) || "Todas as Categorias"}</option>
-              {UNIFIED_CATEGORIES.map(cat => <option key={cat} value={cat}>{t(getCategoryKey(cat), language)}</option>)}
-            </select>
-            <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" size={16} />
-          </div>
-        </div>
-      </div>
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-48">
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pt-6 space-y-10 pb-48">
+        {/* TOP BAR NOW SCROLLS WITH CONTENT FOR BETTER MOBILE VIEWING */}
+        <div className="bg-white px-6 pt-8 pb-4 space-y-4 border-b border-slate-100 z-30 shadow-sm mb-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <button onClick={() => onViewChange(ViewType.PROFILE)} className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-mira-orange-pastel shadow-sm active:scale-90 transition-transform">
+                <img src={user.avatar} className="w-full h-full object-cover" alt="Perfil" referrerPolicy="no-referrer" />
+              </button>
+              <div><h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase leading-none">COMUNIDADE MIRA</h2></div>
+            </div>
+            <button onClick={() => setShowCreateModal(true)} className="w-12 h-12 bg-gradient-to-br from-mira-orange to-red-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-orange-100 active:scale-90 transition-all">
+              <Plus size={24} strokeWidth={3} />
+            </button>
+          </div>
+          <div className="space-y-3">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-mira-orange transition-colors" size={18} />
+              <input type="text" placeholder={t('comm_search', language) || "Pesquisar..."} value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border-2 border-transparent rounded-2xl text-xs font-bold text-slate-800 focus:bg-white focus:border-mira-orange outline-none transition-all shadow-inner" />
+            </div>
+            <div className="relative group">
+              <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)} className="w-full pl-6 pr-10 py-3.5 bg-white border-2 border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest appearance-none outline-none focus:border-mira-orange shadow-sm transition-all">
+                <option value="Todos">{t('comm_all_cats', language) || "Todas as Categorias"}</option>
+                {UNIFIED_CATEGORIES.map(cat => <option key={cat} value={cat}>{t(getCategoryKey(cat), language)}</option>)}
+              </select>
+              <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-focus-within:rotate-180 transition-transform" size={16} />
+            </div>
+          </div>
+        </div>
+
         {/* STORIES SECTION */}
         {topStories.length > 0 && (
           <div className="mb-2 border-b border-slate-100 pb-6 bg-white/50 -mt-6">

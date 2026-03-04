@@ -49,15 +49,20 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                     autoPlay
                     playsInline
                     muted={isMuted}
-                    className="w-full h-full object-cover" // object-cover para não ter bordas pretas, adaptativo.
+                    // Mudado de object-cover para object-contain para não cortar as mãos do MIRA no mobile
+                    // Adicionamos filtros para cores mais vibrantes e contraste dignos de cinema/tecnologia
+                    className="w-full h-full object-contain saturate-[1.15] contrast-[1.05] brightness-105"
                     onEnded={triggerFadeOut}
                 >
                     <source src="/splash_video.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                 </video>
 
-                {/* Overlays de estilo para dar ar premium */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10 pointer-events-none"></div>
+                {/* Overlays de estilo para dar ar premium e profundidade futurista */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/20 pointer-events-none mix-blend-overlay"></div>
+
+                {/* Efeito sutil de brilho azul ciano no fundo para remeter à tecnologia */}
+                <div className="absolute inset-0 bg-blue-500/10 pointer-events-none mix-blend-color animate-pulse-slow"></div>
 
                 {/* Botão de Toggle Som caso o usuário queira mutar */}
                 <button

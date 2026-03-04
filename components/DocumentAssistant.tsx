@@ -170,8 +170,10 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
     return (
         <div className="h-full bg-white overflow-hidden flex flex-col no-scrollbar">
             {activeScreen === 'gallery' && (
-                <div className="flex flex-col h-full">
-                    <div className="bg-white p-6 space-y-6 border-b border-slate-100">
+                <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
+
+                    {/* SCROLLABLE TOP HEADER FOR BETTER MOBILE VIEWING */}
+                    <div className="bg-white p-6 space-y-6 border-b border-slate-100 mb-6">
                         <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">{t('docs_title', language)}</h2>
                         <div className="flex bg-slate-100 p-1.5 rounded-2xl">
                             {[{ id: 'docs', label: t('docs_tab_docs', language) }, { id: 'guides', label: t('docs_tab_reg', language) }].map(tab => (
@@ -283,6 +285,7 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                     </div>
                 </div>
             )}
+
             {activeScreen === 'form' && (
                 <div className="flex flex-col h-full animate-in slide-in-from-right duration-500 relative">
                     <div className="p-5 border-b flex items-center justify-between bg-white z-10">
@@ -359,96 +362,101 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                         </div>
                     </div>
                 </div>
-            )}
+            )
+            }
 
-            {activeScreen === 'success' && (
-                <div className="flex-1 flex flex-col items-center justify-center p-10 text-center animate-fade-in">
-                    <div className="w-24 h-24 bg-mira-green text-white rounded-full flex items-center justify-center mb-8 shadow-2xl animate-bounce"><CheckCircle2 size={56} /></div>
-                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{t('docs_ready', language)}</h2>
-                    <p className="text-sm text-slate-500 font-bold mb-10 max-w-xs leading-relaxed uppercase">O seu documento oficial foi formatado respeitando as normas da AIMA.</p>
-                    <div className="w-full max-w-xs space-y-4">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                handleDownload();
-                            }}
-                            className="w-full bg-slate-900 text-white py-5 rounded-[2.5rem] font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-xl"
-                        >
-                            <Download size={20} /> {t('docs_download', language)}
-                        </button>
-                        <button onClick={() => setActiveScreen('gallery')} className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">{t('docs_back', language)}</button>
+            {
+                activeScreen === 'success' && (
+                    <div className="flex-1 flex flex-col items-center justify-center p-10 text-center animate-fade-in">
+                        <div className="w-24 h-24 bg-mira-green text-white rounded-full flex items-center justify-center mb-8 shadow-2xl animate-bounce"><CheckCircle2 size={56} /></div>
+                        <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{t('docs_ready', language)}</h2>
+                        <p className="text-sm text-slate-500 font-bold mb-10 max-w-xs leading-relaxed uppercase">O seu documento oficial foi formatado respeitando as normas da AIMA.</p>
+                        <div className="w-full max-w-xs space-y-4">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    handleDownload();
+                                }}
+                                className="w-full bg-slate-900 text-white py-5 rounded-[2.5rem] font-black uppercase text-xs tracking-widest flex items-center justify-center gap-3 shadow-xl"
+                            >
+                                <Download size={20} /> {t('docs_download', language)}
+                            </button>
+                            <button onClick={() => setActiveScreen('gallery')} className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">{t('docs_back', language)}</button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {activeScreen === 'guide_view' && selectedGuide && (
-                <div className="flex flex-col h-full animate-in slide-in-from-right duration-500 bg-white">
-                    <div className="p-5 border-b flex items-center justify-between bg-white sticky top-0 z-10">
-                        <button onClick={() => setActiveScreen('gallery')} className="p-3 bg-slate-50 rounded-2xl shrink-0"><ArrowLeft size={20} /></button>
-                        <h2 className="font-black text-sm uppercase tracking-tighter text-slate-800 text-center px-4 leading-tight break-words flex-1">
-                            {selectedGuide.title}
-                        </h2>
-                        <div className="w-10 shrink-0"></div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar pb-32">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2">
-                                <span className="px-3 py-1 bg-mira-blue text-white text-[8px] font-black uppercase tracking-widest rounded-md">{selectedGuide.category}</span>
-                                <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[8px] font-black uppercase tracking-widest rounded-md">{selectedGuide.authority}</span>
-                            </div>
-                            <p className="text-sm text-slate-600 font-medium leading-relaxed">{selectedGuide.explanation}</p>
+            {
+                activeScreen === 'guide_view' && selectedGuide && (
+                    <div className="flex flex-col h-full animate-in slide-in-from-right duration-500 bg-white">
+                        <div className="p-5 border-b flex items-center justify-between bg-white sticky top-0 z-10">
+                            <button onClick={() => setActiveScreen('gallery')} className="p-3 bg-slate-50 rounded-2xl shrink-0"><ArrowLeft size={20} /></button>
+                            <h2 className="font-black text-sm uppercase tracking-tighter text-slate-800 text-center px-4 leading-tight break-words flex-1">
+                                {selectedGuide.title}
+                            </h2>
+                            <div className="w-10 shrink-0"></div>
                         </div>
 
-                        <div className="space-y-6">
-                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] border-l-4 border-mira-orange pl-3">Documentos Necessários</h3>
-                            <div className="grid grid-cols-1 gap-4">
-                                {selectedGuide.steps.map((step: any, idx: number) => (
-                                    <div key={idx} className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex gap-4 items-start">
-                                        <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-mira-orange shadow-sm shrink-0 font-black text-xs">{idx + 1}</div>
-                                        <div>
-                                            <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{step.docName}</p>
-                                            <p className="text-[10px] text-slate-500 font-medium mt-1">{step.whereToGet}</p>
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar pb-32">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-3 py-1 bg-mira-blue text-white text-[8px] font-black uppercase tracking-widest rounded-md">{selectedGuide.category}</span>
+                                    <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[8px] font-black uppercase tracking-widest rounded-md">{selectedGuide.authority}</span>
+                                </div>
+                                <p className="text-sm text-slate-600 font-medium leading-relaxed">{selectedGuide.explanation}</p>
                             </div>
-                        </div>
 
-                        {selectedGuide.faq && (
                             <div className="space-y-6">
-                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] border-l-4 border-mira-blue pl-3">Perguntas Frequentes</h3>
-                                <div className="space-y-4">
-                                    {selectedGuide.faq.map((item: any, idx: number) => (
-                                        <div key={idx} className="p-6 bg-blue-50/50 rounded-[2.5rem] border border-blue-100">
-                                            <p className="text-[11px] font-black text-blue-900 uppercase tracking-tight mb-2">P: {item.q}</p>
-                                            <p className="text-[11px] text-blue-700 font-medium leading-relaxed">R: {item.a}</p>
+                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] border-l-4 border-mira-orange pl-3">Documentos Necessários</h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {selectedGuide.steps.map((step: any, idx: number) => (
+                                        <div key={idx} className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 flex gap-4 items-start">
+                                            <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-mira-orange shadow-sm shrink-0 font-black text-xs">{idx + 1}</div>
+                                            <div>
+                                                <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{step.docName}</p>
+                                                <p className="text-[10px] text-slate-500 font-medium mt-1">{step.whereToGet}</p>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
                             </div>
-                        )}
 
-                        <div className="p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[3rem] text-white space-y-4 shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                            <div className="flex items-center gap-3 relative z-10">
-                                <div className="w-10 h-10 bg-mira-orange rounded-2xl flex items-center justify-center shadow-lg"><Bot size={24} /></div>
-                                <p className="text-xs font-black uppercase tracking-widest">Ainda tem dúvidas?</p>
+                            {selectedGuide.faq && (
+                                <div className="space-y-6">
+                                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] border-l-4 border-mira-blue pl-3">Perguntas Frequentes</h3>
+                                    <div className="space-y-4">
+                                        {selectedGuide.faq.map((item: any, idx: number) => (
+                                            <div key={idx} className="p-6 bg-blue-50/50 rounded-[2.5rem] border border-blue-100">
+                                                <p className="text-[11px] font-black text-blue-900 uppercase tracking-tight mb-2">P: {item.q}</p>
+                                                <p className="text-[11px] text-blue-700 font-medium leading-relaxed">R: {item.a}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-8 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[3rem] text-white space-y-4 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                                <div className="flex items-center gap-3 relative z-10">
+                                    <div className="w-10 h-10 bg-mira-orange rounded-2xl flex items-center justify-center shadow-lg"><Bot size={24} /></div>
+                                    <p className="text-xs font-black uppercase tracking-widest">Ainda tem dúvidas?</p>
+                                </div>
+                                <p className="text-[11px] text-slate-300 font-medium leading-relaxed relative z-10">
+                                    A burocracia pode ser complexa, mas o MIRA está aqui para ajudar a responder todas as suas dúvidas em tempo real.
+                                </p>
+                                <button
+                                    onClick={() => onViewChange(ViewType.ASSISTANT)}
+                                    className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all relative z-10"
+                                >
+                                    Falar com o MIRA agora
+                                </button>
                             </div>
-                            <p className="text-[11px] text-slate-300 font-medium leading-relaxed relative z-10">
-                                A burocracia pode ser complexa, mas o MIRA está aqui para ajudar a responder todas as suas dúvidas em tempo real.
-                            </p>
-                            <button
-                                onClick={() => onViewChange(ViewType.ASSISTANT)}
-                                className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all relative z-10"
-                            >
-                                Falar com o MIRA agora
-                            </button>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };

@@ -151,30 +151,32 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                     <p className="text-xs text-indigo-900 font-bold">Aqui você gere a comunidade. Pode suspender contas que violem as regras ou promover moderadores.</p>
                                 </div>
                                 {users.map(u => (
-                                    <div key={u.id} className="p-6 bg-slate-50 rounded-[2.5rem] flex items-center justify-between border border-transparent hover:border-slate-200 transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <img src={u.avatar} className="w-12 h-12 rounded-2xl shadow-sm" alt="" />
-                                            <div>
-                                                <p className="font-black text-slate-900 text-sm uppercase">{u.name}</p>
-                                                <p className="text-[9px] text-slate-400 font-bold uppercase">{u.email}</p>
+                                    <div key={u.id} className="p-6 bg-slate-50 rounded-[2.5rem] flex flex-col sm:flex-row items-start sm:items-center justify-between border border-transparent hover:border-slate-200 transition-all gap-4">
+                                        <div className="flex items-center gap-4 w-full sm:w-auto">
+                                            <img src={u.avatar} className="w-12 h-12 rounded-2xl shadow-sm shrink-0" alt="" />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-black text-slate-900 text-sm uppercase truncate">{u.name}</p>
+                                                <p className="text-[9px] text-slate-400 font-bold uppercase truncate">{u.email}</p>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-200/50 justify-end mt-2 sm:mt-0">
                                             {u.email && (
                                                 <button
                                                     onClick={() => handleAction(() => adminService.blockEmail(u.email!))}
-                                                    className="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm"
+                                                    className="flex-1 sm:flex-none p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                                                     title="Bloquear Email de registrar novamente"
                                                 >
                                                     <MailX size={18} />
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider sm:hidden">Bloquear Email</span>
                                                 </button>
                                             )}
                                             <button
                                                 onClick={() => handleAction(() => adminService.toggleBlockUser(u.id, !u.isBlocked))}
-                                                className={`p-3 rounded-xl transition-all ${u.isBlocked ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-500 shadow-sm'}`}
+                                                className={`flex-1 sm:flex-none p-3 rounded-xl transition-all flex items-center justify-center gap-2 ${u.isBlocked ? 'bg-red-600 text-white' : 'bg-white text-slate-400 hover:text-red-500 shadow-sm'}`}
                                                 title={u.isBlocked ? "Desbloquear" : "Suspender Usuário"}
                                             >
                                                 {u.isBlocked ? <ShieldCheck size={18} /> : <Ban size={18} />}
+                                                <span className="text-[10px] font-bold uppercase tracking-wider sm:hidden">{u.isBlocked ? 'Desbloquear' : 'Suspender'}</span>
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -182,10 +184,11 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                                         handleAction(() => adminService.deleteUser(u.id));
                                                     }
                                                 }}
-                                                className="p-3 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm"
+                                                className="flex-1 sm:flex-none p-3 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
                                                 title="Apagar permanentemente"
                                             >
                                                 <Trash2 size={18} />
+                                                <span className="text-[10px] font-bold uppercase tracking-wider sm:hidden">Excluir</span>
                                             </button>
                                         </div>
                                     </div>
