@@ -23,6 +23,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
     const [communityReports, setCommunityReports] = useState<any[]>([]);
     const [aiKnowledge, setAIKnowledge] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [userSearchTerm, setUserSearchTerm] = useState('');
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [newKnowledge, setNewKnowledge] = useState({ topic: '', information: '', category: '', source: '' });
@@ -147,10 +148,21 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                         {activeTab === 'users' && (
                             <div className="grid grid-cols-1 gap-4">
                                 <div className="p-6 bg-indigo-50 rounded-[2.5rem] border border-indigo-100 mb-4">
-                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Exemplo / Instrução</p>
-                                    <p className="text-xs text-indigo-900 font-bold">Aqui você gere a comunidade. Pode suspender contas que violem as regras ou promover moderadores.</p>
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Busca e Moderação</p>
+                                    <p className="text-xs text-indigo-900 font-bold mb-4">Gerencia a comunidade, suspenda contas que violam regras e controle denúncias.</p>
+
+                                    <div className="relative">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400" size={18} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar usuário por nome ou e-mail..."
+                                            value={userSearchTerm}
+                                            onChange={(e) => setUserSearchTerm(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3 bg-white border border-indigo-100 rounded-2xl text-xs font-bold text-slate-800 placeholder:text-slate-400 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-all shadow-sm"
+                                        />
+                                    </div>
                                 </div>
-                                {users.map(u => (
+                                {users.filter(u => u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || (u.email && u.email.toLowerCase().includes(userSearchTerm.toLowerCase()))).map(u => (
                                     <div key={u.id} className="p-6 bg-slate-50 rounded-[2.5rem] flex flex-col sm:flex-row items-start sm:items-center justify-between border border-transparent hover:border-slate-200 transition-all gap-4">
                                         <div className="flex items-center gap-4 w-full sm:w-auto">
                                             <img src={u.avatar} className="w-12 h-12 rounded-2xl shadow-sm shrink-0" alt="" />

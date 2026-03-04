@@ -108,7 +108,7 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
             result.title = t("wiz_fallback_title", language);
             result.desc = t("wiz_fallback_desc", language);
             result.steps = [t("wiz_fallback_step1", language), t("wiz_fallback_step2", language), t("wiz_fallback_step3", language)];
-            result.docs = ["promessa_trabalho_art88", "ss_niss", "sef_declaracao_entrada"];
+            result.docs = ["nif_req", "ss_niss"];
             result.needsConsularVisa = true;
         } else if (purpose === "art90a") {
             result.title = t("wiz_nomad_title", language);
@@ -350,10 +350,6 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
                     <p>
                         <strong>{t('wizard_footer_note_label', language)}</strong> {t('wizard_footer_note_text', language)}
                     </p>
-                    <div className="mt-2 flex gap-4 text-[10px] font-bold uppercase tracking-tight">
-                        <a href={OFFICIAL_LINKS.AIMA} target="_blank" rel="noreferrer" className="text-mira-blue hover:underline decoration-2 underline-offset-4">Portal AIMA</a>
-                        <a href={OFFICIAL_LINKS.GOV_PT_RESIDENCE} target="_blank" rel="noreferrer" className="text-mira-blue hover:underline decoration-2 underline-offset-4">CNAIM</a>
-                    </div>
                 </div>
             </div>
         </div>
