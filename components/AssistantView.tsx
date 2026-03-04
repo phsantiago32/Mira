@@ -188,7 +188,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-slate-950 text-white shadow-sm font-['Plus_Jakarta_Sans'] pb-16 sm:pb-0 overflow-hidden relative">
+    <div className="flex flex-col h-full bg-slate-950 text-white shadow-sm font-['Plus_Jakarta_Sans'] overflow-hidden relative rounded-xl md:rounded-3xl border border-white/5">
       <div className="absolute top-[-20%] left-[-10%] w-[80vw] h-[80vw] bg-mira-orange/20 rounded-full blur-[120px] pointer-events-none opacity-40"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-mira-blue/20 rounded-full blur-[100px] pointer-events-none opacity-30"></div>
       <div className="absolute top-[30%] left-[50%] -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
@@ -239,9 +239,9 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
               </span>
             </div>
 
-            <div className={`max-w-[92%] sm:max-w-[85%] rounded-[2rem] px-7 py-6 shadow-2xl relative group transition-all hover:scale-[1.01] ${msg.role === 'user'
-              ? 'bg-gradient-to-br from-mira-orange via-[#f97316] to-[#e44e00] text-white rounded-tr-none border border-white/30 shadow-mira-orange/20'
-              : 'bg-slate-900/80 backdrop-blur-xl text-slate-50 rounded-tl-none border border-white/10 shadow-black/60'}
+            <div className={`max-w-[92%] sm:max-w-[85%] rounded-2xl sm:rounded-[2rem] px-5 py-4 sm:px-7 sm:py-6 shadow-2xl relative group transition-all hover:scale-[1.01] ${msg.role === 'user'
+              ? 'bg-gradient-to-br from-mira-orange via-[#f97316] to-[#e44e00] text-white rounded-tr-sm sm:rounded-tr-none border border-white/30 shadow-mira-orange/20'
+              : 'bg-slate-900/80 backdrop-blur-xl text-slate-50 rounded-tl-sm sm:rounded-tl-none border border-white/10 shadow-black/60'}
               `}>
               {msg.role === 'assistant' && msg.category && (
                 <div className="flex items-center gap-2 mb-4 bg-mira-blue/10 w-fit px-3 py-1.5 rounded-full border border-mira-blue/20">
@@ -273,11 +273,11 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
               <span className="text-[9px] font-black uppercase tracking-widest text-mira-blue">MIRA</span>
               <div className="w-1 h-1 rounded-full bg-mira-blue animate-pulse" />
             </div>
-            <div className="bg-slate-900/60 backdrop-blur-3xl rounded-[2rem] rounded-tl-none px-8 py-6 flex items-center gap-5 border border-white/5 shadow-2xl max-w-[85%]">
+            <div className="bg-slate-900/60 backdrop-blur-3xl rounded-2xl sm:rounded-[2rem] rounded-tl-sm sm:rounded-tl-none px-5 py-4 sm:px-8 sm:py-6 flex items-center gap-5 border border-white/5 shadow-2xl max-w-[92%] sm:max-w-[85%]">
               <div className="flex gap-2">
-                <div className="w-2.5 h-2.5 bg-mira-orange rounded-full animate-bounce shadow-mira-orange/50" />
-                <div className="w-2.5 h-2.5 bg-mira-yellow rounded-full animate-bounce shadow-mira-yellow/50 [animation-delay:0.2s]" />
-                <div className="w-2.5 h-2.5 bg-mira-blue rounded-full animate-bounce shadow-mira-blue/50 [animation-delay:0.4s]" />
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-mira-orange rounded-full animate-bounce shadow-mira-orange/50" />
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-mira-yellow rounded-full animate-bounce shadow-mira-yellow/50 [animation-delay:0.2s]" />
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 bg-mira-blue rounded-full animate-bounce shadow-mira-blue/50 [animation-delay:0.4s]" />
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white animate-pulse">A Pensar...</span>
             </div>
@@ -285,14 +285,14 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
         )}
       </div>
 
-      <div className="p-4 sm:p-8 pb-32 sm:pb-8 bg-slate-950/60 backdrop-blur-3xl border-t border-white/10 z-20 shrink-0 relative w-full">
+      <div className="p-4 sm:p-6 bg-slate-950/80 backdrop-blur-3xl border-t border-white/10 z-20 shrink-0 relative w-full pt-6">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1.5 bg-slate-900 border border-white/10 rounded-full flex items-center gap-2 shadow-2xl z-30">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
           <span className="text-[8px] font-black text-white/60 uppercase tracking-widest whitespace-nowrap">IA Sincronizada 2026</span>
         </div>
 
         <div className="flex flex-col gap-4 max-w-4xl mx-auto items-center mt-2">
-          <div className="w-full flex gap-2 items-end bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-2 pl-5 focus-within:ring-4 focus-within:ring-mira-orange/20 focus-within:border-mira-orange/40 transition-all shadow-2xl group relative overflow-hidden">
+          <div className="w-full flex gap-1.5 sm:gap-2 items-end bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-[2rem] p-1.5 pl-4 sm:p-2 sm:pl-5 focus-within:ring-4 focus-within:ring-mira-orange/20 focus-within:border-mira-orange/40 transition-all shadow-2xl group relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-mira-orange to-mira-blue opacity-30"></div>
             <textarea
               placeholder={
@@ -320,7 +320,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
             <div className="flex items-center gap-2 shrink-0 pb-1 pr-1">
               <button
                 onClick={toggleListening}
-                className={`p-3.5 sm:p-4 transition-all rounded-full shadow-2xl flex items-center justify-center border ${isListening
+                className={`p-3 sm:p-4 transition-all rounded-xl sm:rounded-full shadow-2xl flex items-center justify-center border ${isListening
                   ? 'text-white bg-red-600 border-red-500 animate-pulse ring-4 ring-red-500/20'
                   : 'text-slate-400 bg-white/5 border-white/10 hover:text-white hover:bg-mira-orange hover:border-mira-orange active:scale-95'
                   }`}
@@ -330,7 +330,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
               <button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="p-3.5 sm:p-4 bg-gradient-to-br from-mira-blue to-blue-700 text-white rounded-full disabled:opacity-20 disabled:grayscale transition-all shadow-2xl shadow-mira-blue/30 hover:shadow-mira-blue/50 active:scale-95 flex items-center justify-center border border-white/10"
+                className="p-3 sm:p-4 bg-gradient-to-br from-mira-blue to-blue-700 text-white rounded-xl sm:rounded-full disabled:opacity-20 disabled:grayscale transition-all shadow-2xl shadow-mira-blue/30 hover:shadow-mira-blue/50 active:scale-95 flex items-center justify-center border border-white/10"
               >
                 <Send size={20} className="translate-x-[2px] translate-y-[-1px]" />
               </button>
