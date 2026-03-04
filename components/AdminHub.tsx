@@ -67,10 +67,12 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
         try {
             await action();
             setMessage({ text: 'Operação realizada com sucesso!', type: 'success' });
+            alert('✅ Operação concluída com sucesso!');
             await loadData();
         } catch (err: any) {
             console.error("Admin Action Error:", err);
             setMessage({ text: err.message || 'Erro na operação', type: 'error' });
+            alert('❌ Erro: ' + (err.message || 'Não foi possível completar a ação.'));
         } finally {
             setProcessing(null);
         }
@@ -288,7 +290,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                                             {expandedIds.has(r.id) ? 'Ocultar' : 'Aceder ao Conteúdo Completo'}
                                                         </button>
                                                     </div>
-                                                    <p className={`text-[11px] font-medium text-slate-400 italic bg-slate-900/50 p-2 rounded-xl border border-slate-800 ${expandedIds.has(r.id) ? '' : 'line-clamp-3'}`}>
+                                                    <p className={`text-[11px] font-medium text-slate-400 italic bg-slate-900/50 p-2 rounded-xl border border-slate-800 ${expandedIds.has(r.id) ? 'line-clamp-none overflow-visible' : 'line-clamp-3 overflow-hidden'}`}>
                                                         "{r.reported_content_text || 'Conteúdo indisponível ou apagado.'}"
                                                     </p>
                                                 </div>

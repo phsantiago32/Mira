@@ -193,34 +193,29 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
       <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-mira-blue/20 rounded-full blur-[100px] pointer-events-none opacity-30"></div>
       <div className="absolute top-[30%] left-[50%] -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
 
-      <div className="bg-slate-950/40 backdrop-blur-3xl border-b border-white/10 px-4 py-3 sm:px-6 sm:py-5 flex items-center justify-between z-20 shrink-0 shadow-xl sticky top-0">
-        <div className="flex items-center gap-3">
+      <div className="bg-slate-950/40 backdrop-blur-3xl border-b border-white/10 px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between z-20 shrink-0 shadow-xl sticky top-0">
+        <div className="flex items-center gap-2">
           <div className="relative">
-            <div className="absolute inset-0 bg-mira-orange rounded-xl blur flex-none opacity-40 animate-pulse"></div>
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-2.5 rounded-xl relative border border-white/20 shadow-lg group ring-1 ring-white/10 flex-none">
-              <Bot size={22} className="text-mira-orange group-hover:scale-110 transition-transform duration-500" />
-              <div className="absolute bottom-0.5 right-0.5 w-2 h-2 bg-green-500 rounded-full border border-slate-900 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+            <div className="absolute inset-0 bg-mira-orange rounded-lg blur opacity-30 animate-pulse"></div>
+            <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-2 rounded-lg relative border border-white/10 shadow-lg group ring-1 ring-white/5 flex-none">
+              <Bot size={18} className="text-mira-orange group-hover:scale-110 transition-transform duration-500" />
             </div>
           </div>
           <div className="flex flex-col">
-            <h2 className="font-black text-xl uppercase tracking-tighter leading-none text-white drop-shadow-md">
-              {language === 'PT' ? 'MIRA CHAT' :
-                language === 'EN' ? 'MIRA CHAT' :
-                  language === 'ES' ? 'MIRA CHAT' : 'CHAT MIRA'}
+            <h2 className="font-black text-lg uppercase tracking-tighter leading-none text-white drop-shadow-md">
+              MIRA CHAT
             </h2>
-            <div className="flex items-center gap-1.5 mt-1">
-              <Sparkles size={8} className="text-mira-blue animate-pulse flex-none" />
-              <p className="text-[9px] font-black text-mira-blue uppercase tracking-[0.25em] drop-shadow-sm truncate pr-2 max-w-[150px] sm:max-w-none">
-                {language === 'PT' ? 'INTELIGÊNCIA 2026' :
-                  language === 'EN' ? 'INTELLIGENCE 2026' :
-                    language === 'ES' ? 'INTELIGENCIA 2026' : 'INTELLIGENCE 2026'}
+            <div className="flex items-center gap-1 mt-0.5">
+              <Sparkles size={6} className="text-mira-blue animate-pulse flex-none" />
+              <p className="text-[8px] font-black text-mira-blue uppercase tracking-[0.2em] drop-shadow-sm truncate pr-2 max-w-[120px] sm:max-w-none">
+                INTELIGÊNCIA 2026
               </p>
             </div>
           </div>
         </div>
 
-        <button onClick={() => { stopAudio(); setVoiceEnabled(!voiceEnabled); }} className={`p-2.5 rounded-xl transition-all flex-none ${voiceEnabled ? 'bg-mira-orange/10 text-mira-orange border border-mira-orange/30' : 'bg-slate-800 border border-slate-700 text-slate-500 opacity-60'}`}>
-          {voiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+        <button onClick={() => { stopAudio(); setVoiceEnabled(!voiceEnabled); }} className={`p-2 rounded-lg transition-all flex-none ${voiceEnabled ? 'bg-mira-orange/10 text-mira-orange border border-mira-orange/20' : 'bg-slate-800 border border-slate-700 text-slate-500 opacity-60'}`}>
+          {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
         </button>
       </div>
 

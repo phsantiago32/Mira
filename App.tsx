@@ -388,14 +388,17 @@ const App: React.FC = () => {
             </div>
           </main>
 
-          {/* Floating Chat Mira Button */}
-          <button
-            onClick={() => setCurrentView(ViewType.ASSISTANT)}
-            className="fixed bottom-24 right-6 md:bottom-10 md:right-10 z-[300] w-16 h-16 bg-gradient-to-br from-mira-orange via-orange-500 to-red-600 text-white rounded-full flex items-center justify-center shadow-[0_10px_40px_rgba(249,115,22,0.6)] active:scale-90 transition-all hover:scale-110 group animate-pulse"
-          >
-            <Bot size={32} className="text-white group-hover:rotate-12 transition-transform drop-shadow-md" />
-            <div className="absolute top-0 right-0 w-4 h-4 bg-mira-green rounded-full border-2 border-white"></div>
-          </button>
+          {/* Floating Chat Mira Button - HIDE when in Assistant view */}
+          {currentView !== ViewType.ASSISTANT && (
+            <button
+              onClick={() => setCurrentView(ViewType.ASSISTANT)}
+              className="fixed bottom-24 right-5 md:bottom-10 md:right-10 z-[300] w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-mira-orange via-orange-500 to-red-600 text-white rounded-full flex items-center justify-center shadow-[0_10px_40px_rgba(249,115,22,0.4)] active:scale-90 transition-all hover:scale-110 group animate-pulse"
+              title="Perguntar ao MIRA"
+            >
+              <Bot size={28} className="text-white group-hover:rotate-12 transition-transform drop-shadow-md md:w-8 md:h-8" />
+              <div className="absolute top-0 right-0 w-3.5 h-3.5 bg-mira-green rounded-full border-2 border-white"></div>
+            </button>
+          )}
         </div>
 
         <style>{`
