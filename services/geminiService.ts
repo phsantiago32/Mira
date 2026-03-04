@@ -68,7 +68,7 @@ export const generateAssistantResponse = async (prompt: string, history: { role:
         }
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -90,7 +90,7 @@ export const generateAssistantResponse = async (prompt: string, history: { role:
           console.error("Gemini REST Return Error 400/500:", errBody);
 
           // DEMO/DEV FALLBACK: Se houver erro de chave, retornar mock de demonstração.
-          if (response.status === 400 || response.status === 403) {
+          if (response.status === 400 || response.status === 403 || response.status === 404) {
             return {
               text: "Olá! Como este é um ambiente de testes sem uma Chave API válida do Google configurada, esta é uma resposta simulada do MIRA.\n\nVi a sua mensagem: '" + prompt + "'.\n" + (additionalKnowledge ? "\nDe acordo com o Saber IA oficial:\n" + additionalKnowledge + "\n\n" : "") + "\nSim, é verdade! A MIRA possui parcerias oficiais para facilitar a integração, e eu funciono como o seu assistente inteligente e acolhedor 24h por dia.",
               category: "Demonstração Offline"
@@ -152,12 +152,11 @@ export const autoTranslateText = async (text: string, targetLanguage: string): P
   const targetLangName = languageNames[langKey] || langKey;
 
   try {
-    // Attempt 1: Direct Gemini REST API (if key is loaded in Vite environment)
     const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
     if (apiKey) {
       const prompt = `Translate the following text to ${targetLangName}. Return ONLY the translated text, no explanations, no quotes, no extra text:\n\n${text}`;
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
