@@ -6,6 +6,7 @@ import { audioService } from '../services/audioService';
 import { Message } from '../types';
 import { analytics } from '../services/analyticsService';
 import { t } from '../utils/translations';
+import { supabase } from '../lib/supabase';
 
 // Audio Helpers for raw PCM data from Gemini TTS
 function decodeBase64(base64: string) {
@@ -148,7 +149,14 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
 
     try {
       const result = await generateAssistantResponse(currentInput, history, undefined, language);
-      analytics.track('ai_query', userMsg.id, result.category, { query: currentInput });
+
+      // Get the correct user UUID for analytics instead of the message ID
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (userId) {
+        analytics.track('ai_query', userId, result.category, { query: currentInput });
+      }
+
       const botMsg = { id: (Date.now() + 1).toString(), role: 'assistant' as const, text: result.text, category: result.category, audioBase64: undefined, timestamp: new Date() };
       setMessages(prev => [...prev, botMsg]);
     } catch (err) {
