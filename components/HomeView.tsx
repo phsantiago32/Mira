@@ -8,7 +8,7 @@ import {
 import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
 import { supabase } from '../lib/supabase';
-
+import { submitReportRest } from '../services/reportService';
 interface HomeViewProps {
   user: UserType;
   onViewChange: (view: ViewType) => void;
@@ -68,7 +68,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
     if (!suggestionData.message || isSubmitting) return;
     setIsSubmitting(true);
     try {
-      const { submitReportRest } = await import('../services/reportService');
       await submitReportRest('suggestion', `Assunto: ${suggestionData.subject || 'Geral'}\nMensagem: ${suggestionData.message}`);
 
       setShowSuggestionModal(false);

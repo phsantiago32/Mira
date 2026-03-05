@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { submitReportRest } from '../services/reportService';
 import { Search, Filter, MapPin, Phone, Mail, Globe, Star, Building2, ChevronRight, Info, MessageSquare, Clock, Zap, RefreshCcw, AlertTriangle, Volume2, AlertCircle, ChevronDown, X, CheckCircle2 } from 'lucide-react';
 import { MAP_CATEGORIES, MapAlert } from '../types';
 import { t } from '../utils/translations';
@@ -208,7 +209,6 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
 
 
             if (reviewText.trim().length > 0) {
-                const { submitReportRest } = await import('../services/reportService');
                 await submitReportRest('service_rating', `Serviço: ${serviceName} - Avaliação: ${ratingStars} estrelas\nMensagem: ${reviewText}`);
 
                 // Optimistically add the new review to local state so it shows instantly
@@ -253,7 +253,6 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
         const statusForUpdate = queueStatus;
         setQueueStatuses(prev => ({ ...prev, [serviceIdForUpdate]: statusForUpdate }));
         try {
-            const { submitReportRest } = await import('../services/reportService');
             await submitReportRest('service_queue', `Serviço: Serviço ID ${serviceIdForUpdate}\nFila reportada como: ${statusForUpdate.toUpperCase()}`);
             showToast(t('service_queue_reported', language) || "Estado da fila atualizado!", 'success');
             setQueueModalOpen(false);
