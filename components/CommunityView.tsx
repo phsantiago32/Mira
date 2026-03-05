@@ -93,6 +93,35 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [translatedPosts, setTranslatedPosts] = useState<Set<string>>(new Set());
 
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMorePosts) return;
+    setIsLoadingMore(true);
+    try {
+      // Offset: skip local mock posts
+      const offset = masterPosts.filter(p => !p.id.startsWith('p-') && !p.id.startsWith('local-')).length;
+      const newPosts = await communityService.fetchPosts(user.id, 15, offset);
+
+      if (newPosts.length < 15) setHasMorePosts(false);
+
+      if (newPosts.length > 0) {
+        setMasterPosts(prev => {
+          const final = [...prev];
+          newPosts.forEach(nP => {
+            if (!final.some(p => p.id === nP.id)) final.push(nP);
+          });
+          return final;
+        });
+      }
+    } catch (e) {
+      console.error("Erro ao carregar mais posts:", e);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   const topStories = useMemo(() => {
     return [...masterPosts].sort((a, b) => {
       const scoreA = a.likes + a.comments.length + a.usefulVotes + a.fakeVotes;
@@ -732,6 +761,17 @@ const CommunityView: React.FC<CommunityViewProps> = ({
               </div>
             );
           }) : <div className="flex flex-col items-center justify-center py-40 opacity-20"><Search size={64} className="mb-4" /><p className="text-xs font-black uppercase tracking-[0.3em]">Nenhum post encontrado</p></div>}
+
+          {filteredPosts.length > 0 && hasMorePosts && !searchFilter && !selectedCategory && (
+            <button
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className="w-full py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-white border border-slate-100 hover:bg-slate-50 rounded-3xl mt-4 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+            >
+              {isLoadingMore ? <Loader2 size={16} className="animate-spin inline mr-2" /> : null}
+              {isLoadingMore ? 'A Carregar...' : 'Ver publicações mais antigas'}
+            </button>
+          )}
         </div>
       </div>
 

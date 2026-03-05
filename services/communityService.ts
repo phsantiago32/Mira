@@ -3,7 +3,7 @@ import { Post, Comment, ValidationStatus } from '../types';
 import { submitReportRest } from './reportService';
 
 export const communityService = {
-    async fetchPosts(userId?: string): Promise<Post[]> {
+    async fetchPosts(userId?: string, limit: number = 15, offset: number = 0): Promise<Post[]> {
         const { data, error } = await supabase
             .from('posts')
             .select(`
@@ -16,7 +16,8 @@ export const communityService = {
         ),
         post_votes (id, user_id, vote_type)
       `)
-            .order('created_at', { ascending: false });
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
 
         if (error) {
             console.error('Error fetching posts:', error);
