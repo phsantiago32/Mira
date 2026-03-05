@@ -91,9 +91,27 @@ const App: React.FC = () => {
     if (user && user.id) {
       communityService.fetchPosts(user.id).then(async dbPosts => {
         setMasterPosts(prev => {
-          const finalPosts = [...(dbPosts || [])];
+          const mergedPosts = (dbPosts || []).map(dbP => {
+            const localP = prev.find(p => p.id === dbP.id);
+            if (!localP) return dbP;
 
-          // 1. Preserve locally created posts that might be missing from DB (e.g., if DB was wiped or offline)
+            // Scalability & Persistence: If local version has flags and server doesn't, carry them over
+            // This prevents "flicker" where votes disappear after refresh
+            return {
+              ...dbP,
+              // Use server data but keep optimistic local interaction state if server state is empty/false
+              isLikedByUser: dbP.isLikedByUser || localP.isLikedByUser,
+              userVote: dbP.userVote || localP.userVote,
+              // Keep higher counts if local change was very recent (optimistic)
+              likes: Math.max(dbP.likes || 0, localP.isLikedByUser ? 1 : 0, localP.likes || 0),
+              usefulVotes: Math.max(dbP.usefulVotes || 0, localP.userVote === 'true' ? 1 : 0, localP.usefulVotes || 0),
+              fakeVotes: Math.max(dbP.fakeVotes || 0, localP.userVote === 'false' ? 1 : 0, localP.fakeVotes || 0)
+            };
+          });
+
+          const finalPosts = [...mergedPosts];
+
+          // 1. Preserve locally created posts that might be missing from DB
           prev.forEach(localPost => {
             if (!finalPosts.some(p => p.id === localPost.id)) {
               finalPosts.push(localPost);
@@ -103,11 +121,12 @@ const App: React.FC = () => {
           // 2. Ensure PROTECTED_POSTS are always present
           PROTECTED_POSTS.forEach(pp => {
             if (!finalPosts.some(p => p.id === pp.id || p.title === pp.title)) {
-              finalPosts.push(pp);
+              const existing = finalPosts.find(p => p.id === pp.id);
+              if (!existing) finalPosts.push(pp);
             }
           });
 
-          // Sort final array so newest posts appear first based on timestamp
+          // Sort final array so newest posts appear first
           return finalPosts.sort((a, b) => {
             const timeA = new Date(a.timestamp === 'Agora mesmo' ? Date.now() : a.timestamp).getTime();
             const timeB = new Date(b.timestamp === 'Agora mesmo' ? Date.now() : b.timestamp).getTime();

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, memo } from 'react';
 import {
   Heart, MessageCircle, MoreHorizontal,
   CheckCircle2, Search, Plus, X,
@@ -46,22 +46,22 @@ interface CommunityViewProps {
 }
 
 const THEMED_IMAGES = [
-  'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=80', // Friends integration
-  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80', // Diverse community
-  'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=800&q=80', // Support/union
-  'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800&q=80', // Happy diverse group
-  'https://images.unsplash.com/photo-1476900543704-4312b78632f8?w=800&q=80', // Journey/Adventure
-  'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800&q=80', // Handshake/Support
-  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80', // Integration/Education
-  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=800&q=80',  // Networking/Team
-  'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&q=80', // Meeting/Greeting warmly
-  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&q=80', // Stack of hands / Unity
-  'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=800&q=80', // Eating together / Fellowship
-  'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=800&q=80', // Airplane/Luggage/Journey
-  'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80', // Group studying / Language barrier
-  'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=800&q=80', // Looking at map/city / Discovering
-  'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&q=80', // Coworking / Professional Integration
-  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80'  // Diverse people cheering/happy
+  'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=400&q=60', // Friends integration
+  'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&q=60', // Diverse community
+  'https://images.unsplash.com/photo-1521737852567-6949f3f9f2b5?w=400&q=60', // Support/union
+  'https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=400&q=60', // Happy diverse group
+  'https://images.unsplash.com/photo-1476900543704-4312b78632f8?w=400&q=60', // Journey/Adventure
+  'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=400&q=60', // Handshake/Support
+  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=60', // Integration/Education
+  'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=400&q=60',  // Networking/Team
+  'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=400&q=60', // Meeting/Greeting warmly
+  'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=400&q=60', // Stack of hands / Unity
+  'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400&q=60', // Eating together / Fellowship
+  'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400&q=60', // Airplane/Luggage/Journey
+  'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=60', // Group studying / Language barrier
+  'https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=400&q=60', // Looking at map/city / Discovering
+  'https://images.unsplash.com/photo-1531482615713-2afd69097998?w=400&q=60', // Coworking / Professional Integration
+  'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&q=60'  // Diverse people cheering/happy
 ];
 
 
@@ -993,4 +993,4 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   );
 };
 
-export default CommunityView;
+export default memo(CommunityView);

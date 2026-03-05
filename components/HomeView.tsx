@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, memo } from 'react';
 import { ViewType, User as UserType, Post, NotificationPreferences } from '../types';
 import {
   Briefcase, Map as MapIcon, FileText,
@@ -44,7 +44,7 @@ const MOCK_POSTS: Post[] = [
 
 import { useToast } from './Toast';
 
-export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language, onLogout }) => {
+export const HomeView: React.FC<HomeViewProps> = memo(({ user, onViewChange, language, onLogout }) => {
   const { showToast } = useToast();
   const [showNotifSettings, setShowNotifSettings] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPreferences>({
@@ -255,7 +255,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
           <div className="flex items-center gap-2 mb-3 text-slate-300">
             <ShieldCheck size={16} />
           </div>
-          <p className="text-[9px] font-black text-slate-400 text-center uppercase tracking-[0.3em]">
+          <p className="text-[7px] font-black text-slate-400 text-center uppercase tracking-normal px-4 w-full break-words opacity-60">
             {t('home_copyright', language)}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-3 mb-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
@@ -318,4 +318,4 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
       )}
     </div>
   );
-};
+});

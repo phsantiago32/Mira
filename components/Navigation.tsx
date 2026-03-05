@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Home, HeartHandshake, FileText, Building2, Briefcase, GraduationCap, MapPin } from 'lucide-react';
 import { ViewType } from '../types';
 import { t } from '../utils/translations';
@@ -20,7 +20,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange, lang
   ];
 
   return (
-    <nav className="bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 pb-8 pt-3 flex justify-around items-center md:flex-col md:w-24 md:h-full md:border-r md:border-t-0 md:px-0 md:py-10 transition-all duration-300 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+    <nav className="bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 pb-[max(env(safe-area-inset-bottom, 20px), 2rem)] pt-3 flex justify-around items-center md:flex-col md:w-24 md:h-full md:border-r md:border-t-0 md:px-0 md:py-10 transition-all duration-300 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-50">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = currentView === item.id;
@@ -49,4 +49,4 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange, lang
   );
 };
 
-export default Navigation;
+export default memo(Navigation);
