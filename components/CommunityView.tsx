@@ -74,9 +74,15 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   const [selectedImage, setSelectedImage] = useState(THEMED_IMAGES[0]);
   const [commentingOn, setCommentingOn] = useState<{ postId: string, replyToName?: string } | null>(null);
   const [newComment, setNewComment] = useState('');
-  const [userVotes, setUserVotes] = useState<Record<string, 'true' | 'false'>>({});
-  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-  const [likedComments, setLikedComments] = useState<Set<string>>(new Set());
+  const [userVotes, setUserVotes] = useState<Record<string, 'true' | 'false'>>(() => {
+    try { return JSON.parse(localStorage.getItem('mira_userVotes') || '{}'); } catch { return {}; }
+  });
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('mira_likedPosts') || '[]')); } catch { return new Set(); }
+  });
+  const [likedComments, setLikedComments] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('mira_likedComments') || '[]')); } catch { return new Set(); }
+  });
   const [selectedMember, setSelectedMember] = useState<User | null>(null);
   const [reportingItem, setReportingItem] = useState<{ postId: string, commentId?: string } | null>(null);
   const [reportForm, setReportForm] = useState({ name: user.name || '', email: user.email || '', reason: '' });
@@ -111,22 +117,44 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     return () => clearTimeout(timer);
   }, [activeStory, topStories]);
 
+  // Sync local changes sequentially immediately
+  useEffect(() => {
+    localStorage.setItem('mira_userVotes', JSON.stringify(userVotes));
+  }, [userVotes]);
+
+  useEffect(() => {
+    localStorage.setItem('mira_likedPosts', JSON.stringify(Array.from(likedPosts)));
+  }, [likedPosts]);
+
+  useEffect(() => {
+    localStorage.setItem('mira_likedComments', JSON.stringify(Array.from(likedComments)));
+  }, [likedComments]);
+
   // Sincronizar DB persistence com os overrides locais
   useEffect(() => {
     setLikedPosts(prev => {
-      const next = new Set(prev);
-      masterPosts.forEach(p => { if (p.isLikedByUser) next.add(p.id); });
-      return next;
+      let newSet = new Set(prev);
+      let changed = false;
+      masterPosts.forEach(p => {
+        if (p.isLikedByUser && !newSet.has(p.id)) { newSet.add(p.id); changed = true; }
+      });
+      return changed ? newSet : prev;
     });
     setUserVotes(prev => {
-      const next = { ...prev };
-      masterPosts.forEach(p => { if (p.userVote) next[p.id] = p.userVote; });
-      return next;
+      let next = { ...prev };
+      let changed = false;
+      masterPosts.forEach(p => {
+        if (p.userVote && next[p.id] !== p.userVote) { next[p.id] = p.userVote; changed = true; }
+      });
+      return changed ? next : prev;
     });
     setLikedComments(prev => {
-      const next = new Set(prev);
-      masterPosts.forEach(p => p.comments?.forEach((c: any) => { if (c.isLikedByUser) next.add(c.id); }));
-      return next;
+      let newSet = new Set(prev);
+      let changed = false;
+      masterPosts.forEach(p => p.comments?.forEach((c: any) => {
+        if (c.isLikedByUser && !newSet.has(c.id)) { newSet.add(c.id); changed = true; }
+      }));
+      return changed ? newSet : prev;
     });
   }, [masterPosts]);
 

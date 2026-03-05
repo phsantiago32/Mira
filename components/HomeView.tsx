@@ -252,14 +252,14 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-3 mt-12 mb-8 px-4">
-          <div className="flex justify-center gap-6">
-            <button onClick={() => onViewChange(ViewType.PRIVACY)} className="text-[9px] font-black text-slate-400 uppercase tracking-wide hover:text-mira-orange transition-colors active:scale-95">{t('home_legal_policy', language)}</button>
-            <button className="text-[9px] font-black text-slate-400 uppercase tracking-wide hover:text-mira-orange transition-colors active:scale-95">{t('home_terms', language)}</button>
-          </div>
-          <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest text-center">
-            {t('home_copyright', language)}
-          </p>
+        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mt-12 mb-8 px-4 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+          <p>{t('home_copyright', language)}</p>
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <button onClick={() => onViewChange(ViewType.PRIVACY)} className="hover:text-mira-orange transition-colors">{t('home_legal_policy', language)}</button>
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <button className="hover:text-mira-orange transition-colors">{t('home_terms', language)}</button>
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <a href="mailto:mir.app@hotmail.com" className="hover:text-mira-orange transition-colors">mir.app@hotmail.com</a>
         </div>
       </div>
       {/* SUGGESTION MODAL */}
