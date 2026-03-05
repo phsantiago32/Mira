@@ -111,6 +111,25 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     return () => clearTimeout(timer);
   }, [activeStory, topStories]);
 
+  // Sincronizar DB persistence com os overrides locais
+  useEffect(() => {
+    setLikedPosts(prev => {
+      const next = new Set(prev);
+      masterPosts.forEach(p => { if (p.isLikedByUser) next.add(p.id); });
+      return next;
+    });
+    setUserVotes(prev => {
+      const next = { ...prev };
+      masterPosts.forEach(p => { if (p.userVote) next[p.id] = p.userVote; });
+      return next;
+    });
+    setLikedComments(prev => {
+      const next = new Set(prev);
+      masterPosts.forEach(p => p.comments?.forEach((c: any) => { if (c.isLikedByUser) next.add(c.id); }));
+      return next;
+    });
+  }, [masterPosts]);
+
   const filteredPosts = useMemo(() => {
     let result = activeCategory === 'Todos' ? masterPosts : masterPosts.filter(p => p.category === activeCategory);
     if (searchFilter.trim()) {

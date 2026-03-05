@@ -143,6 +143,8 @@ export interface Post {
   authorBio?: string;
   title: string;
   content: string;
+  isLikedByUser?: boolean;
+  userVote?: 'true' | 'false';
   category: string;
   workTopic?: string;
   geoTag?: string;

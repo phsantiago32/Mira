@@ -42,6 +42,10 @@ export const communityService = {
                 isLikedByUser: userId ? (c.comment_likes || []).some((cl: any) => cl.user_id === userId) : false
             }));
 
+            const isLikedByUser = userId ? row.post_votes?.some((v: any) => v.vote_type === 'like' && v.user_id === userId) : false;
+            const factVote = userId ? row.post_votes?.find((v: any) => (v.vote_type === 'useful' || v.vote_type === 'fake') && v.user_id === userId) : null;
+            const userVote = factVote ? (factVote.vote_type === 'useful' ? 'true' : 'false') : undefined;
+
             return {
                 id: row.id,
                 authorId: row.author_id,
@@ -56,6 +60,8 @@ export const communityService = {
                 backgroundImage: row.background_image,
                 tags: row.tags || [],
                 likes: likesCount,
+                isLikedByUser,
+                userVote,
                 comments: formattedComments,
                 isVerified: row.is_verified || false,
                 isFraudWarning: row.is_fraud_warning || false,
