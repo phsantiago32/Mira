@@ -42,47 +42,37 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     }, [onFinish]);
 
     return (
-        <div className={`fixed inset-0 z-[2000] bg-black flex items-center justify-center transition-opacity duration-300 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed inset-0 z-[2000] bg-black flex items-center justify-center transition-opacity duration-500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
             <div className="relative w-full h-[100dvh] bg-black overflow-hidden flex flex-col items-center justify-center">
 
-                {/* BACKGROUND VIDEO BLUR - Responsive magic for covering edges on any aspect ratio */}
+                {/* 
+                  * SINGLE PERFECT VIDEO CONTAINER: 
+                  * `object-contain` guarantees NO CROP (hands are safe).
+                  * `w-full h-full` guarantees it scales perfectly on any device size.
+                  * Filters act as a "remastering" tool for standard definition.
+                */}
                 <video
+                    ref={videoRef}
                     autoPlay
                     playsInline
-                    muted={true}
-                    loop
-                    className="absolute inset-0 w-full h-full object-cover scale-[1.2] blur-[40px] opacity-60 saturate-[1.5]"
+                    muted={isMuted}
+                    // Cinematic upscaling filters: crispness, contrast, and color pop
+                    className="w-full h-full object-contain filter saturate-[1.2] contrast-[1.1] brightness-[1.05] drop-shadow-[0_0_30px_rgba(0,229,255,0.15)]"
+                    onEnded={triggerFadeOut}
                 >
                     <source src="/splash_video.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
                 </video>
 
-                {/* MAIN FOCUSED VIDEO - Perfectly kept aspect ratio, rounded corners */}
-                <div className="relative z-10 w-full flex items-center justify-center h-full max-w-[500px] mx-auto scale-[1.01]">
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted={isMuted}
-                        className="w-full h-full sm:h-auto sm:max-h-[85dvh] object-contain saturate-[1.15] contrast-[1.05] brightness-105"
-                        onEnded={triggerFadeOut}
-                    >
-                        <source src="/splash_video.mp4" type="video/mp4" />
-                        Your browser does not support the video tag.
-                    </video>
-                </div>
+                {/* Efeito sutil de brilho azul ciano no fundo para remeter à tecnologia (Atrás/Mixado) */}
+                <div className="absolute inset-0 bg-gradient-to-t from-mira-blue/10 via-transparent to-transparent pointer-events-none mix-blend-color z-10"></div>
 
-                {/* Overlays de estilo para dar ar premium e profundidade futurista */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none mix-blend-overlay z-20"></div>
-
-                {/* Efeito sutil de brilho azul ciano no fundo para remeter à tecnologia */}
-                <div className="absolute inset-0 bg-blue-500/10 pointer-events-none mix-blend-color animate-pulse-slow z-20"></div>
-
-                {/* Botão de Toggle Som caso o usuário queira mutar */}
+                {/* Botão de Toggle Som */}
                 <button
                     onClick={() => setIsMuted(!isMuted)}
-                    className="absolute bottom-10 right-6 sm:right-10 p-4 bg-black/40 backdrop-blur-xl text-white rounded-full hover:bg-black/60 transition-all border border-white/20 z-30 shadow-2xl"
+                    className="absolute bottom-8 right-6 sm:bottom-12 sm:right-12 p-3.5 sm:p-4 bg-white/10 backdrop-blur-xl text-white rounded-full hover:bg-white/20 transition-all border border-white/20 z-30 shadow-2xl active:scale-95"
                 >
-                    {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                    {isMuted ? <VolumeX size={20} className="sm:w-6 sm:h-6" /> : <Volume2 size={20} className="sm:w-6 sm:h-6" />}
                 </button>
             </div>
         </div>

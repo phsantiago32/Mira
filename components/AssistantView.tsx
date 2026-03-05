@@ -285,7 +285,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
         )}
       </div>
 
-      <div className="p-4 sm:p-6 bg-slate-950/80 backdrop-blur-3xl border-t border-white/10 z-20 shrink-0 relative w-full pt-6">
+      <div className="p-4 sm:p-6 pb-24 sm:pb-6 bg-slate-950/80 backdrop-blur-3xl border-t border-white/10 z-20 shrink-0 relative w-full pt-6">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1.5 bg-slate-900 border border-white/10 rounded-full flex items-center gap-2 shadow-2xl z-30">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
           <span className="text-[8px] font-black text-white/60 uppercase tracking-widest whitespace-nowrap">IA Sincronizada 2026</span>
@@ -339,7 +339,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
 
           <div className="flex flex-col items-center gap-3 w-full">
             <div className="flex items-center justify-center w-full px-4">
-              <p className="text-[10px] sm:text-[11px] font-bold text-slate-500 leading-relaxed drop-shadow-sm text-center">
+              <p className="text-[8px] sm:text-[10px] font-bold text-slate-500 leading-relaxed drop-shadow-sm text-center">
                 {t('chat_legal_warning', language)}
               </p>
             </div>

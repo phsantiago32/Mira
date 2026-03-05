@@ -281,15 +281,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
                 <div className="absolute bottom-[-15%] middle w-[700px] h-[700px] bg-mira-blue/20 rounded-full blur-[150px] orb-animation" style={{ animationDelay: '-10s' }}></div>
             </div>
 
-            {/* Language Selector Dropdown - Moved to far Right and distanced from logo */}
-            <div className="absolute top-6 right-2 z-50">
+            <div className="absolute top-4 right-4 z-50">
                 <div className="relative">
                     <button
                         onClick={() => setShowLangMenu(!showLangMenu)}
-                        className="bg-mira-orange text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all border border-white/20"
+                        className="bg-mira-orange text-white px-3 sm:px-5 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 sm:gap-3 shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all border border-white/20"
                     >
                         <div className="bg-white/20 p-1 rounded-lg">
-                            <Globe size={16} />
+                            <Globe size={14} className="sm:w-4 sm:h-4" />
                         </div>
                         {language}
                         <ChevronDown size={14} className={`transition-transform duration-300 ${showLangMenu ? 'rotate-180' : ''}`} />
@@ -311,9 +310,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, language, setLa
             </div>
 
             <div className="w-full max-w-md z-10 flex flex-col items-center justify-center flex-1">
-                {/* Bloco de Logo Isolado */}
-                <div className="text-center mb-6 sm:mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <div className="inline-flex w-16 h-16 sm:w-24 sm:h-24 bg-mira-dark-blue/40 backdrop-blur-3xl rounded-2xl sm:rounded-[2.5rem] mb-4 sm:mb-6 p-3 sm:p-4 items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/10 relative overflow-hidden group">
+                <div className="text-center mb-6 sm:mb-12 animate-in fade-in slide-in-from-top-4 duration-700 mt-8 sm:mt-0">
+                    <div className="inline-flex w-20 h-20 sm:w-28 sm:h-28 bg-mira-dark-blue/40 backdrop-blur-3xl rounded-[2rem] sm:rounded-[2.5rem] mb-4 sm:mb-6 p-4 items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.6)] border border-white/10 relative overflow-hidden group">
                         <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-50 rounded-[2.5rem] group-hover:opacity-100 transition-opacity duration-1000"></div>
                         <div className="w-full h-full text-mira-blue-light relative z-10 filter drop-shadow-[0_0_15px_rgba(0,229,255,0.7)]">
                             {MIRA_LOGO}
