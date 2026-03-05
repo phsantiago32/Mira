@@ -195,8 +195,21 @@ const CommunityView: React.FC<CommunityViewProps> = ({
 
     setMasterPosts(prev => prev.map(p => {
       if (p.id !== postId) return p;
-      if (!commentId) return { ...p, likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1 };
-      return { ...p, comments: p.comments.map(c => c.id === commentId ? { ...c, likes: isLiked ? Math.max(0, c.likes - 1) : c.likes + 1 } : c) };
+      if (!commentId) {
+        return {
+          ...p,
+          likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1,
+          isLikedByUser: !isLiked
+        };
+      }
+      return {
+        ...p,
+        comments: p.comments.map(c => c.id === commentId ? {
+          ...c,
+          likes: isLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
+          isLikedByUser: !isLiked
+        } : c)
+      };
     }));
 
     if (commentId) {
@@ -290,7 +303,12 @@ const CommunityView: React.FC<CommunityViewProps> = ({
         if (newVote === 'true') useful++;
         if (newVote === 'false') fake++;
       }
-      return { ...p, usefulVotes: useful, fakeVotes: fake };
+      return {
+        ...p,
+        usefulVotes: useful,
+        fakeVotes: fake,
+        userVote: isRemoving ? undefined : newVote
+      };
     }));
 
     setUserVotes(prev => {

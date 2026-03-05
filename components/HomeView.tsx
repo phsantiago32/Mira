@@ -252,13 +252,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ user, onViewChange, language
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-5 mt-4 p-8 bg-slate-50/80 backdrop-blur-sm rounded-[3rem] border border-slate-100/50 shadow-inner">
-          <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
-            <button onClick={() => onViewChange(ViewType.PRIVACY)} className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-mira-orange transition-colors active:scale-95">{t('home_legal_policy', language)}</button>
-            <button className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-mira-orange transition-colors active:scale-95">{t('home_terms', language)}</button>
+        <div className="flex flex-col items-center gap-3 mt-12 mb-8 px-4">
+          <div className="flex justify-center gap-6">
+            <button onClick={() => onViewChange(ViewType.PRIVACY)} className="text-[9px] font-black text-slate-400 uppercase tracking-wide hover:text-mira-orange transition-colors active:scale-95">{t('home_legal_policy', language)}</button>
+            <button className="text-[9px] font-black text-slate-400 uppercase tracking-wide hover:text-mira-orange transition-colors active:scale-95">{t('home_terms', language)}</button>
           </div>
-          <div className="w-16 h-1 bg-slate-200 rounded-full mt-2 mb-1"></div>
-          <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] text-center w-full">
+          <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest text-center">
             {t('home_copyright', language)}
           </p>
         </div>
