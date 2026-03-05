@@ -47,9 +47,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
                 {/* 
                   * SINGLE PERFECT VIDEO CONTAINER: 
-                  * `object-contain` guarantees NO CROP (hands are safe).
-                  * `w-full h-full` guarantees it scales perfectly on any device size.
-                  * Filters act as a "remastering" tool for standard definition.
+                  * `object-cover` garante que preenche todo o ecrã sem deixar margens pretas.
+                  * Filtros de remasterização mantidos.
                 */}
                 <video
                     ref={videoRef}
@@ -57,7 +56,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                     playsInline
                     muted={isMuted}
                     // Cinematic upscaling filters: crispness, contrast, and color pop
-                    className="w-full h-full object-contain filter saturate-[1.2] contrast-[1.1] brightness-[1.05] drop-shadow-[0_0_30px_rgba(0,229,255,0.15)]"
+                    className="absolute inset-0 w-full h-[100dvh] object-cover filter saturate-[1.2] contrast-[1.1] brightness-[1.05]"
                     onEnded={triggerFadeOut}
                 >
                     <source src="/splash_video.mp4" type="video/mp4" />
