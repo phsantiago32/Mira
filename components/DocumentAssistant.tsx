@@ -35,7 +35,7 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
     onViewChange,
     language
 }) => {
-    const [activeTab, setActiveTab] = useState<'docs' | 'guides'>('docs');
+    const [activeTab, setActiveTab] = useState<'docs' | 'guides'>('guides');
     const [activeScreen, setActiveScreen] = useState<'gallery' | 'form' | 'success' | 'guide_view'>('gallery');
     const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
     const [selectedGuide, setSelectedGuide] = useState<any | null>(null);
@@ -176,7 +176,7 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                     <div className="bg-white p-6 space-y-6 border-b border-slate-100 mb-6">
                         <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">{t('docs_title', language)}</h2>
                         <div className="flex bg-slate-100 p-1.5 rounded-2xl">
-                            {[{ id: 'docs', label: t('docs_tab_docs', language) }, { id: 'guides', label: t('docs_tab_reg', language) }].map(tab => (
+                            {[{ id: 'guides', label: t('docs_tab_reg', language) }, { id: 'docs', label: t('docs_tab_docs', language) }].map(tab => (
                                 <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'}`}>{tab.label}</button>
                             ))}
                         </div>

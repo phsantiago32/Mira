@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Heart, MessageCircle, MoreHorizontal,
   CheckCircle2, Search, Plus, X,
@@ -92,6 +92,7 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   const [openPostMenu, setOpenPostMenu] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [translatedPosts, setTranslatedPosts] = useState<Set<string>>(new Set());
+  const isProcessingInteraction = useRef<Set<string>>(new Set());
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMorePosts, setHasMorePosts] = useState(true);
@@ -248,48 +249,61 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   };
 
   const handleLike = async (postId: string, commentId?: string) => {
-    const isLiked = commentId ? likedComments.has(commentId) : likedPosts.has(postId);
+    const interactionKey = commentId ? `like_comment_${commentId}` : `like_post_${postId}`;
+    if (isProcessingInteraction.current.has(interactionKey)) return;
+    isProcessingInteraction.current.add(interactionKey);
 
-    setMasterPosts(prev => prev.map(p => {
-      if (p.id !== postId) return p;
-      if (!commentId) {
+    try {
+      const isLiked = commentId ? likedComments.has(commentId) : likedPosts.has(postId);
+
+      setMasterPosts(prev => prev.map(p => {
+        if (p.id !== postId) return p;
+        if (!commentId) {
+          return {
+            ...p,
+            likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1,
+            isLikedByUser: !isLiked
+          };
+        }
         return {
           ...p,
-          likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1,
-          isLikedByUser: !isLiked
+          comments: p.comments.map(c => c.id === commentId ? {
+            ...c,
+            likes: isLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
+            isLikedByUser: !isLiked
+          } : c)
         };
-      }
-      return {
-        ...p,
-        comments: p.comments.map(c => c.id === commentId ? {
-          ...c,
-          likes: isLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
-          isLikedByUser: !isLiked
-        } : c)
-      };
-    }));
+      }));
 
-    if (commentId) {
-      const isActuallyLiked = likedComments.has(commentId);
-      setLikedComments(prev => {
-        const next = new Set(prev);
-        if (isActuallyLiked) next.delete(commentId); else next.add(commentId);
-        return next;
-      });
-      // background Sync
-      try {
-        await communityService.toggleCommentLike(commentId, user.id);
-      } catch (e) { }
-    } else {
-      setLikedPosts(prev => {
-        const next = new Set(prev);
-        if (isLiked) next.delete(postId); else next.add(postId);
-        return next;
-      });
-      // background Sync
-      try {
-        await communityService.voteOrLike(postId, user.id, 'like');
-      } catch (e) { }
+      if (commentId) {
+        const isActuallyLiked = likedComments.has(commentId);
+        setLikedComments(prev => {
+          const next = new Set(prev);
+          if (isActuallyLiked) next.delete(commentId); else next.add(commentId);
+          return next;
+        });
+        // background Sync
+        try {
+          await communityService.toggleCommentLike(commentId, user.id);
+        } catch (e) { }
+      } else {
+        setLikedPosts(prev => {
+          const next = new Set(prev);
+          if (isLiked) next.delete(postId); else next.add(postId);
+          return next;
+        });
+        // background Sync
+        try {
+          await communityService.voteOrLike(postId, user.id, 'like');
+        } catch (e) { }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      // Add brief artificial delay to prevent UI glitching if users spam click
+      setTimeout(() => {
+        isProcessingInteraction.current.delete(interactionKey);
+      }, 500);
     }
   };
 
