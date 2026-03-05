@@ -285,29 +285,30 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
         )}
       </div>
 
-      <div className="p-4 sm:p-6 pb-24 sm:pb-6 bg-slate-950/80 backdrop-blur-3xl border-t border-white/10 z-20 shrink-0 relative w-full pt-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1.5 bg-slate-900 border border-white/10 rounded-full flex items-center gap-2 shadow-2xl z-30">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-[8px] font-black text-white/60 uppercase tracking-widest whitespace-nowrap">IA Sincronizada 2026</span>
+      <div className="p-4 sm:p-6 pb-24 sm:pb-8 bg-slate-950/90 backdrop-blur-3xl border-t border-white/10 z-20 shrink-0 relative w-full pt-8">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-5 py-2 bg-slate-900 border border-white/10 rounded-full flex items-center gap-2 shadow-2xl z-30">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-[pulse_2s_infinite]"></div>
+          <span className="text-[9px] font-black text-white/70 uppercase tracking-widest whitespace-nowrap">IA Sincronizada 2026</span>
         </div>
 
-        <div className="flex flex-col gap-4 max-w-4xl mx-auto items-center mt-2">
-          <div className="w-full flex gap-1.5 sm:gap-2 items-end bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-[2rem] p-1.5 pl-4 sm:p-2 sm:pl-5 focus-within:ring-4 focus-within:ring-mira-orange/20 focus-within:border-mira-orange/40 transition-all shadow-2xl group relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-mira-orange to-mira-blue opacity-30"></div>
+        <div className="flex flex-col gap-3 max-w-3xl mx-auto w-full">
+          <div className="relative w-full flex flex-col bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[2rem] p-2 focus-within:ring-2 focus-within:ring-mira-orange/30 focus-within:bg-slate-900/80 transition-all shadow-2xl group overflow-hidden">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-mira-orange to-mira-blue opacity-50"></div>
+
             <textarea
               placeholder={
-                language === 'PT' ? 'Fale com o MIRA (Texto ou Voz)...' :
-                  language === 'EN' ? 'Talk to MIRA (Text or Voice)...' :
-                    language === 'ES' ? 'Habla con MIRA (Texto o Voz)...' :
-                      'Parlez à MIRA (Texte ou Voix)...'
+                language === 'PT' ? 'Pergunte ao MIRA... (Texto ou Voz)' :
+                  language === 'EN' ? 'Ask MIRA... (Text or Voice)' :
+                    language === 'ES' ? 'Pregunta a MIRA... (Texto o Voz)' :
+                      'Demandez à MIRA... (Texte ou Voix)'
               }
-              className="flex-1 bg-transparent py-4 my-auto outline-none text-[15px] sm:text-lg font-medium text-white placeholder:text-slate-500 resize-none min-h-[44px] max-h-[120px] no-scrollbar w-full"
+              className="w-full bg-transparent px-4 sm:px-5 pt-4 pb-14 outline-none text-[16px] sm:text-[17px] font-medium text-white placeholder:text-slate-500 resize-none min-h-[64px] max-h-[200px] overflow-y-auto no-scrollbar"
               rows={1}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
                 e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -317,33 +318,29 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
               }}
             />
 
-            <div className="flex items-center gap-2 shrink-0 pb-1 pr-1">
+            <div className="absolute bottom-2 right-2 flex items-center gap-2">
               <button
                 onClick={toggleListening}
-                className={`p-3 sm:p-4 transition-all rounded-xl sm:rounded-full shadow-2xl flex items-center justify-center border ${isListening
-                  ? 'text-white bg-red-600 border-red-500 animate-pulse ring-4 ring-red-500/20'
-                  : 'text-slate-400 bg-white/5 border-white/10 hover:text-white hover:bg-mira-orange hover:border-mira-orange active:scale-95'
+                className={`p-3 sm:p-3.5 transition-all rounded-full shadow-lg flex items-center justify-center ${isListening
+                  ? 'text-white bg-red-600 border-red-500 animate-pulse ring-4 ring-red-500/30'
+                  : 'text-slate-400 bg-white/5 hover:text-white hover:bg-white/10 active:scale-95'
                   }`}
               >
-                <Mic size={20} />
+                <Mic size={18} />
               </button>
               <button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="p-3 sm:p-4 bg-gradient-to-br from-mira-blue to-blue-700 text-white rounded-xl sm:rounded-full disabled:opacity-20 disabled:grayscale transition-all shadow-2xl shadow-mira-blue/30 hover:shadow-mira-blue/50 active:scale-95 flex items-center justify-center border border-white/10"
+                className="p-3 sm:p-3.5 bg-white text-slate-900 rounded-full disabled:opacity-20 disabled:scale-95 transition-all hover:bg-mira-orange hover:text-white shadow-xl active:scale-90 flex items-center justify-center"
               >
-                <Send size={20} className="translate-x-[2px] translate-y-[-1px]" />
+                <Send size={18} className="translate-x-[1px] translate-y-[-1px]" />
               </button>
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-3 w-full">
-            <div className="flex items-center justify-center w-full px-4">
-              <p className="text-[8px] sm:text-[10px] font-bold text-slate-500 leading-relaxed drop-shadow-sm text-center">
-                {t('chat_legal_warning', language)}
-              </p>
-            </div>
-          </div>
+          <p className="text-[10px] font-bold text-slate-500 text-center px-4 mt-1 tracking-wide">
+            {t('chat_legal_warning', language)}
+          </p>
         </div>
       </div>
     </div>
