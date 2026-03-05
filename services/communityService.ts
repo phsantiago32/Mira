@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { Post, Comment, ValidationStatus } from '../types';
+import { submitReportRest } from './reportService';
 
 export const communityService = {
     async fetchPosts(userId?: string): Promise<Post[]> {
@@ -170,7 +171,6 @@ export const communityService = {
         const targetId = data.postId || data.commentId || 'desconhecido';
         const contentStr = `Denúncia de ${type === 'post_report' ? 'Post' : 'Comentário'} ID: ${targetId}\nMotivo: ${data.reason}\nReportado por: ${data.email || data.name || 'Anónimo'}`;
 
-        const { submitReportRest } = await import('./reportService');
         await submitReportRest(type, contentStr);
 
         // Try to increment post report counter, but don't fail if RPC doesn't exist

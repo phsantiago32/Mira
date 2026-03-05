@@ -218,30 +218,36 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     const backupPostId = commentingOn.postId;
 
     try {
-      // Real DB logic first
-      const dbComment = await communityService.createComment(backupPostId, user.id, finalContent);
-      if (dbComment) {
-        const comment: Comment = {
-          id: dbComment.id,
-          authorId: user.id,
-          authorName: user.name,
-          authorAvatar: user.avatar,
-          content: finalContent,
-          timestamp: 'Agora mesmo',
-          likes: 0
-        };
+      const isMockPost = backupPostId === '1' || backupPostId.startsWith('p-');
+      let dbCommentId = `local-${Date.now()}`;
 
-        // Update UI only after DB confirmation
-        setMasterPosts(prev => prev.map(p => {
-          if (p.id !== backupPostId) return p;
-          return { ...p, comments: [...p.comments, comment] };
-        }));
-
-        setCommentingOn(null);
-        setNewComment('');
-        onEarnPoints(2);
-        analytics.track('comment_created', user.id);
+      // Real DB logic first, se não for mock post
+      if (!isMockPost) {
+        const dbComment = await communityService.createComment(backupPostId, user.id, finalContent);
+        if (dbComment) dbCommentId = dbComment.id;
       }
+
+      // Update UI
+      const comment: Comment = {
+        id: dbCommentId,
+        authorId: user.id,
+        authorName: user.name,
+        authorAvatar: user.avatar,
+        content: finalContent,
+        timestamp: 'Agora mesmo',
+        likes: 0
+      };
+
+      setMasterPosts(prev => prev.map(p => {
+        if (p.id !== backupPostId) return p;
+        return { ...p, comments: [...p.comments, comment] };
+      }));
+
+      setCommentingOn(null);
+      setNewComment('');
+      onEarnPoints(2);
+      analytics.track('comment_created', user.id);
+
     } catch (error: any) {
       console.error("Erro ao publicar comentário:", error);
       showToast(`Erro ao enviar comentário: ${error?.message || 'Tente novamente'}`, 'error');
