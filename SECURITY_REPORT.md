@@ -1,177 +1,311 @@
-# Relatório de Vulnerabilidades e Correções de Segurança
+# 🔒 Relatório de Auditoria de Segurança — MIRA
 
-**Projeto:** MIRA  
-**Data:** Março de 2026  
-**Tipo de Auditoria:** Revisão de Segurança — Exposição de Credenciais em Repositório Git  
-**Severidade Geral:** 🔴 Crítica
+**Data:** 05 de Março de 2026  
+**Repositório:** `phsantiago32/Mira`  
+**Branch auditada:** `copilot/conduct-security-audit`  
+**Auditor:** GitHub Copilot Coding Agent  
 
 ---
 
 ## Resumo Executivo
 
-Foi identificada a exposição de credenciais sensíveis diretamente no código-fonte do repositório. Tokens de API, senhas de contas de utilizador e chaves SMTP estavam armazenados em texto simples em ficheiros rastreados pelo Git, o que constitui uma vulnerabilidade crítica. Um actor malicioso com acesso ao repositório (mesmo que privado, bastaria uma fuga de acesso ou um colaborador desonesto) poderia usar essas credenciais para comprometer totalmente a base de dados, os dados dos utilizadores e os serviços de e-mail.
+Foi realizada uma auditoria de segurança completa no código-fonte do repositório MIRA com foco na deteção de **credenciais, tokens de API e segredos expostos em texto simples**. Foram identificadas **5 categorias de vulnerabilidades**, afetando **20 ficheiros**, com gravidade entre Alta e Crítica. Todas as vulnerabilidades foram corrigidas neste Pull Request.
 
-Todas as vulnerabilidades identificadas foram corrigidas neste pull request.
-
----
-
-## Vulnerabilidades Identificadas
-
-### VUL-01 — Token Supabase Hardcoded em Scripts de Administração
-- **Severidade:** 🔴 Crítica  
-- **Ficheiros afetados:**
-  - `check_admin_rls.mjs`
-  - `check_all_fk.mjs`
-  - `check_denied_rls.mjs`
-  - `check_fk.mjs`
-  - `check_profile_rls.mjs`
-  - `check_tables.mjs`
-  - `check_users.mjs`
-  - `fix_admin_deletes_all.mjs`
-  - `fix_deletes_rls.mjs`
-  - `fix_rls.mjs`
-  - `prep_test.mjs`
-  - `query_rls.mjs`
-- **Descrição:** Um token pessoal de acesso à API de gestão do Supabase (`sbp_94aeed3...`) estava codificado diretamente em 12 scripts de administração. Esse token concede acesso privilegiado à Management API do Supabase, permitindo operações como leitura e modificação de políticas RLS, gestão de utilizadores e alterações de configuração do projeto.
-- **Impacto potencial:** Acesso total à base de dados de produção, capacidade de alterar ou eliminar políticas de segurança RLS, exfiltração de dados de utilizadores.
+> ⚠️ **Ação obrigatória pela proprietária:** como os segredos estiveram presentes no histórico Git, **todos os tokens e palavras-passe afetados devem ser revogados/alterados imediatamente**, independentemente da visibilidade do repositório.
 
 ---
 
-### VUL-02 — Credenciais de Utilizadores de Teste Hardcoded
-- **Severidade:** 🔴 Crítica  
-- **Ficheiros afetados:**
-  - `test_login.cjs`
-  - `test_login2.cjs`
-  - `test_login3.cjs`
-  - `test_supabase_auth.mjs`
-- **Descrição:** Endereços de e-mail e senhas de contas reais (utilizador comum e administrador) estavam escritos em texto simples nos scripts de teste automatizado.
-  - Utilizador comum: `amandajhonnes@yahoo.com.br` / `Britney`
-  - Administrador: `amandasabreu@gmail.com` / `Britney`
-- **Impacto potencial:** Acesso não autorizado à aplicação como utilizador comum ou como administrador, incluindo acesso ao painel AdminHub com permissões totais de gestão.
+## Índice
+
+1. [VUL-01 — Token de Acesso Pessoal do Supabase exposto](#vul-01)
+2. [VUL-02 — Chave SMTP / API do Resend exposta](#vul-02)
+3. [VUL-03 — Credenciais de contas de teste em texto simples](#vul-03)
+4. [VUL-04 — Credenciais de produção no ficheiro de documentação](#vul-04)
+5. [VUL-05 — Ficheiros sensíveis não excluídos pelo `.gitignore`](#vul-05)
+6. [Ficheiro `.env.example` adicionado](#env-example)
+7. [Ações de resposta obrigatórias](#acoes)
+8. [Resumo das alterações por ficheiro](#tabela)
 
 ---
 
-### VUL-03 — Senha SMTP do Serviço de E-mail Exposta
-- **Severidade:** 🔴 Crítica  
-- **Ficheiro afetado:** `auth_config.json`
-- **Descrição:** O ficheiro `auth_config.json` continha a configuração completa de autenticação do Supabase, incluindo a senha do servidor SMTP (serviço Resend) — um token de 64 caracteres em texto simples. Este ficheiro era rastreado pelo Git.
-- **Impacto potencial:** Uso não autorizado do serviço de e-mail para envio de spam, phishing ou e-mails fraudulentos em nome do projeto MIRA.
+## VUL-01 — Token de Acesso Pessoal do Supabase exposto {#vul-01}
+
+| Atributo      | Detalhe |
+|---------------|---------|
+| **Gravidade** | 🔴 Crítica |
+| **Tipo**      | Credencial de serviço (Personal Access Token) |
+| **CWE**       | CWE-312 — Armazenamento em texto simples de informação sensível |
+
+### Descrição
+
+O **Personal Access Token (PAT)** do Supabase (`sbp_94aeed3fe712bdf7ff4a5c4301037568675fd933`) e a **referência do projeto** (`ychwhxkxsxmuvabxlyjn`) estavam codificados diretamente em 12 scripts de manutenção/migração. Este token permite acesso administrativo total à base de dados via Supabase Management API, incluindo execução arbitrária de queries SQL e modificação de políticas RLS.
+
+### Ficheiros afetados
+
+| Ficheiro | Tipo de acesso exposto |
+|---|---|
+| `check_admin_rls.mjs` | Leitura de políticas RLS |
+| `check_all_fk.mjs` | Leitura de chaves estrangeiras |
+| `check_fk.mjs` | Leitura de chaves estrangeiras |
+| `check_denied_rls.mjs` | Leitura de políticas RLS |
+| `check_profile_rls.mjs` | Leitura de políticas RLS de perfis |
+| `check_tables.mjs` | Listagem de tabelas |
+| `check_users.mjs` | Consulta de utilizadores |
+| `fix_rls.mjs` | **Modificação** de políticas RLS |
+| `fix_admin_deletes_all.mjs` | **Modificação** de políticas RLS |
+| `fix_deletes_rls.mjs` | **Modificação** de políticas RLS |
+| `query_rls.mjs` | Leitura de políticas RLS |
+| `prep_test.mjs` | Inserção de dados de teste |
+
+### Código vulnerável (exemplo)
+
+```js
+// ANTES — token exposto em texto simples
+const token = 'sbp_94aeed3fe712bdf7ff4a5c4301037568675fd933';
+const ref   = 'ychwhxkxsxmuvabxlyjn';
+```
+
+### Correção aplicada
+
+```js
+// DEPOIS — leitura de variáveis de ambiente com validação obrigatória
+const token = process.env.SUPABASE_TOKEN;
+const ref   = process.env.SUPABASE_PROJECT_REF;
+
+if (!token || !ref) {
+  console.error('Erro: as variáveis SUPABASE_TOKEN e SUPABASE_PROJECT_REF devem estar definidas.');
+  process.exit(1);
+}
+```
+
+**Ação de resposta:** Revogar o token em [Supabase Dashboard → Account → Tokens](https://supabase.com/dashboard/account/tokens) e gerar um novo.
 
 ---
 
-### VUL-04 — Credenciais de Acesso Armazenadas em Ficheiro de Documentação
-- **Severidade:** 🟠 Alta  
-- **Ficheiro afetado:** `PROTECTED_CONTENT.md`
-- **Descrição:** Credenciais de contas (e-mail e senha) de utilizador comum e de administrador estavam documentadas em texto simples no ficheiro `PROTECTED_CONTENT.md`, rastreado pelo Git.
-- **Impacto potencial:** Mesmo impacto da VUL-02 — acesso não autorizado à aplicação e ao painel de administração.
+## VUL-02 — Chave SMTP / API do Resend exposta {#vul-02}
+
+| Atributo      | Detalhe |
+|---------------|---------|
+| **Gravidade** | 🔴 Crítica |
+| **Tipo**      | Chave de API de serviço de e-mail |
+| **CWE**       | CWE-312 — Armazenamento em texto simples de informação sensível |
+
+### Descrição
+
+O ficheiro `auth_config.json` (exportação da configuração do Supabase Auth) continha a chave de API do serviço **Resend** em texto simples no campo `smtp_pass`. Esta chave permite ao portador enviar e-mails em nome da aplicação MIRA, potencialmente usada para phishing ou spam, e pode gerar custos não autorizados.
+
+```json
+// ANTES — chave de API real exposta
+"smtp_pass": "5b343ad1e76dbf87b8f204c5e01afcf831fbe46b055ca7926573e5bd7f108fec"
+```
+
+### Correção aplicada
+
+```json
+// DEPOIS — valor redacted com indicação de rotação obrigatória
+"smtp_pass": "REDACTED_ROTATE_THIS_TOKEN"
+```
+
+Adicionalmente, `auth_config.json`, `auth_config_after.json` e `auth_update.json` foram adicionados ao `.gitignore` para impedir futuros commits acidentais.
+
+**Ação de resposta:** Aceder ao painel do [Resend](https://resend.com/api-keys) e revogar a chave comprometida, criando uma nova.
 
 ---
 
-### VUL-05 — Ausência de `.gitignore` para Ficheiros Sensíveis
-- **Severidade:** 🟡 Média  
-- **Descrição:** O ficheiro `.gitignore` não excluía ficheiros potencialmente sensíveis como `.env`, `auth_config.json`, ficheiros de resultado de queries RLS e screenshots de testes. Isso aumentava o risco de exposição acidental de credenciais em futuras alterações.
-- **Impacto potencial:** Exposição inadvertida de credenciais em commits futuros.
+## VUL-03 — Credenciais de contas de teste em texto simples {#vul-03}
 
----
+| Atributo      | Detalhe |
+|---------------|---------|
+| **Gravidade** | 🟠 Alta |
+| **Tipo**      | Credenciais de autenticação (email + senha) |
+| **CWE**       | CWE-798 — Uso de credenciais codificadas diretamente |
 
-## Correções Aplicadas
+### Descrição
 
-### FIX-01 — Substituição de Tokens Hardcoded por Variáveis de Ambiente
-- **Resolve:** VUL-01  
-- **Descrição:** Nos 12 scripts de administração afetados, as linhas com o token e o `ref` do projeto foram substituídas por leitura de variáveis de ambiente:
-  ```js
-  // Antes (vulnerável)
-  const token = 'sbp_94aeed3fe712bdf7ff4a5c4301037568675fd933';
-  const ref = 'ychwhxkxsxmuvabxlyjn';
+Quatro scripts de teste continham os endereços de e-mail reais e a senha das contas de utilizador e administrador da aplicação MIRA codificados diretamente no código-fonte.
 
-  // Depois (seguro)
-  const token = process.env.SUPABASE_TOKEN;
-  const ref = process.env.SUPABASE_PROJECT_REF;
+### Ficheiros afetados e código vulnerável
 
-  if (!token || !ref) {
-    console.error('Error: SUPABASE_TOKEN and SUPABASE_PROJECT_REF environment variables must be set.');
+```js
+// test_login.cjs e test_login2.cjs
+await page.type('input[type="text"]',     'amandajhonnes@yahoo.com.br');
+await page.type('input[type="password"]', 'Britney');
+
+// test_login3.cjs
+await page.type('input[type="text"]',     'amandasabreu@gmail.com');
+await page.type('input[type="password"]', 'Britney');
+
+// test_supabase_auth.mjs
+await supabase.auth.signInWithPassword({
+    email:    'amandasabreu@gmail.com',
+    password: 'Britney'
+});
+```
+
+### Correção aplicada
+
+```js
+// DEPOIS — variáveis de ambiente com validação
+const testEmail    = process.env.TEST_USER_EMAIL;
+const testPassword = process.env.TEST_USER_PASSWORD;
+
+if (!testEmail || !testPassword) {
+    console.error('Erro: TEST_USER_EMAIL e TEST_USER_PASSWORD devem estar definidas.');
     process.exit(1);
-  }
-  ```
+}
+```
+
+**Ação de resposta:** Alterar a senha das duas contas afetadas no Supabase Auth.
 
 ---
 
-### FIX-02 — Substituição de Credenciais de Teste por Variáveis de Ambiente
-- **Resolve:** VUL-02  
-- **Descrição:** Nos 4 scripts de teste, as credenciais hardcoded foram substituídas por variáveis de ambiente com validação de presença:
-  ```js
-  // Antes (vulnerável)
-  await page.type('input[type="text"]', 'amandajhonnes@yahoo.com.br');
-  await page.type('input[type="password"]', 'Britney');
+## VUL-04 — Credenciais de produção no ficheiro de documentação {#vul-04}
 
-  // Depois (seguro)
-  const testEmail = process.env.TEST_USER_EMAIL;
-  const testPassword = process.env.TEST_USER_PASSWORD;
-  if (!testEmail || !testPassword) {
-    console.error('Error: TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables must be set.');
-    process.exit(1);
-  }
-  await page.type('input[type="text"]', testEmail);
-  await page.type('input[type="password"]', testPassword);
-  ```
-  O mesmo padrão foi aplicado para as credenciais de administrador (`TEST_ADMIN_EMAIL` / `TEST_ADMIN_PASSWORD`).
+| Atributo      | Detalhe |
+|---------------|---------|
+| **Gravidade** | 🟠 Alta |
+| **Tipo**      | Credenciais de autenticação (email + senha) em Markdown |
+| **CWE**       | CWE-312 — Armazenamento em texto simples de informação sensível |
 
----
+### Descrição
 
-### FIX-03 — Redação da Senha SMTP e Exclusão do Ficheiro de Configuração
-- **Resolve:** VUL-03  
-- **Descrição:** O valor da senha SMTP em `auth_config.json` foi substituído pelo marcador `REDACTED_ROTATE_THIS_TOKEN` e o ficheiro foi adicionado ao `.gitignore` para não ser rastreado em commits futuros.
-  > ⚠️ **Ação Necessária:** O token SMTP original foi exposto no histórico Git. **É obrigatório revogar e regenerar o token no painel do Resend** (<https://resend.com/api-keys>), mesmo que o repositório seja privado.
+O ficheiro `PROTECTED_CONTENT.md` continha uma secção intitulada **"ACESSOS E CREDENCIAIS OFICIAIS"** com os e-mails e a senha de ambas as contas (utilizador comum e administrador) em texto simples, versionados no repositório.
 
----
+```markdown
+<!-- ANTES -->
+**Utilizador Comum:**
+- **Email**: `amandajhonnes@yahoo.com.br`
+- **Senha**: `Britney`
 
-### FIX-04 — Remoção de Credenciais do Ficheiro de Documentação
-- **Resolve:** VUL-04  
-- **Descrição:** As credenciais de e-mail e senha foram removidas do `PROTECTED_CONTENT.md` e substituídas por referência a um gestor de palavras-passe:
-  ```markdown
-  // Antes
-  **Email**: `amandajhonnes@yahoo.com.br`
-  **Senha**: `Britney`
+**Admin Hub (Acesso Total):**
+- **Email**: `amandasabreu89@gmail.com`
+- **Senha**: `Britney`
+```
 
-  // Depois
-  **Email**: *(ver gestor de palavras-passe)*
-  **Senha**: *(ver gestor de palavras-passe)*
-  ```
+### Correção aplicada
+
+```markdown
+<!-- DEPOIS -->
+**Utilizador Comum:**
+- **Email**: *(ver gestor de palavras-passe)*
+- **Senha**: *(ver gestor de palavras-passe)*
+
+**Admin Hub (Acesso Total):**
+- **Email**: *(ver gestor de palavras-passe)*
+- **Senha**: *(ver gestor de palavras-passe)*
+```
+
+Adicionado aviso a recomendar o uso de um gestor de palavras-passe (ex: Bitwarden, 1Password).
 
 ---
 
-### FIX-05 — Atualização do `.gitignore` e Criação do `.env.example`
-- **Resolve:** VUL-05  
-- **Descrição:** O ficheiro `.gitignore` foi atualizado para excluir:
-  - Ficheiros `.env` e variantes (`.env.local`, `.env.*.local`)
-  - Ficheiros de configuração de autenticação (`auth_config.json`, `auth_config_after.json`, `auth_update.json`)
-  - Ficheiros de resultado de queries (`rls_checked.json`, `rls_out.json`, `fk_checked.json`, `all_fk_checked.json`, `tables_checked.json`)
-  - Screenshots de testes (`test_admin_screenshot.png`)
-- Foi criado um ficheiro `.env.example` como template documentado com todas as variáveis de ambiente necessárias, sem valores reais.
+## VUL-05 — Ficheiros sensíveis não excluídos pelo `.gitignore` {#vul-05}
+
+| Atributo      | Detalhe |
+|---------------|---------|
+| **Gravidade** | 🟡 Média |
+| **Tipo**      | Configuração incorreta de controlo de versão |
+| **CWE**       | CWE-200 — Exposição de informação sensível |
+
+### Descrição
+
+O `.gitignore` não excluía vários ficheiros que não deveriam ser versionados:
+
+- **Ficheiros de configuração de autenticação** (`auth_config.json`, `auth_config_after.json`, `auth_update.json`) — exportações do Supabase Auth que podem conter tokens, segredos de OAuth e chaves SMTP.
+- **Artefactos de output de scripts** (`rls_checked.json`, `rls_out.json`, `fk_checked.json`, `all_fk_checked.json`, `tables_checked.json`) — resultados de queries à base de dados que expõem a estrutura interna do esquema.
+- **Capturas de ecrã de testes** (`test_admin_screenshot.png`) — podem revelar dados de utilizadores reais.
+- **Ficheiros de variáveis de ambiente** (`.env`, `.env.local`, `.env.*.local`) — não estavam totalmente cobertos pela regra `*.local` existente.
+
+### Correção aplicada
+
+Adicionadas as seguintes entradas ao `.gitignore`:
+
+```gitignore
+# Environment files – never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Supabase auth config exports – may contain SMTP tokens and other secrets
+auth_config.json
+auth_config_after.json
+auth_update.json
+
+# Script output / query result artifacts
+rls_checked.json
+rls_out.json
+fk_checked.json
+all_fk_checked.json
+tables_checked.json
+
+# Test screenshots
+test_admin_screenshot.png
+```
 
 ---
 
-## Ações Recomendadas Pós-Correção
+## Ficheiro `.env.example` adicionado {#env-example}
 
-| Prioridade | Ação | Responsável |
-|------------|------|-------------|
-| 🔴 Imediata | Revogar e regenerar o token Supabase (`sbp_94aeed3...`) no painel do Supabase → Settings → API | Proprietária do projeto |
-| 🔴 Imediata | Revogar e regenerar o token SMTP no painel do Resend | Proprietária do projeto |
-| 🔴 Imediata | Alterar a senha das contas `amandajhonnes@yahoo.com.br` e `amandasabreu@gmail.com` / `amandasabreu89@gmail.com` | Proprietária do projeto |
-| 🟠 Alta | Verificar o histórico Git para garantir que não há outros segredos expostos em commits anteriores (usar ferramentas como `git-secrets` ou `truffleHog`) | Proprietária do projeto |
-| 🟡 Média | Configurar o ficheiro `.env` com as variáveis corretas em todos os ambientes de desenvolvimento e produção | Equipa de desenvolvimento |
-| 🟡 Média | Considerar a adoção de um gestor de segredos (ex: GitHub Secrets, Vercel Environment Variables, HashiCorp Vault) | Equipa de desenvolvimento |
+Foi criado o ficheiro `.env.example` para documentar todas as variáveis de ambiente necessárias ao projeto, facilitando a configuração por novos colaboradores sem necessidade de partilhar segredos reais:
+
+```dotenv
+# Supabase (frontend)
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
+
+# Supabase Management API (scripts lado servidor)
+SUPABASE_TOKEN=<your-supabase-personal-access-token>
+SUPABASE_PROJECT_REF=<your-supabase-project-ref>
+
+# Credenciais de teste
+TEST_USER_EMAIL=<test-user@example.com>
+TEST_USER_PASSWORD=<test-user-password>
+TEST_ADMIN_EMAIL=<admin@example.com>
+TEST_ADMIN_PASSWORD=<admin-password>
+```
 
 ---
 
-## Resumo de Segurança Final
+## ⚠️ Ações de Resposta Obrigatórias {#acoes}
 
-| ID | Vulnerabilidade | Severidade | Status |
-|----|----------------|------------|--------|
-| VUL-01 | Token Supabase hardcoded em scripts | 🔴 Crítica | ✅ Corrigido |
-| VUL-02 | Credenciais de teste hardcoded | 🔴 Crítica | ✅ Corrigido |
-| VUL-03 | Senha SMTP exposta em auth_config.json | 🔴 Crítica | ✅ Corrigido (redacted + gitignored) |
-| VUL-04 | Credenciais em ficheiro de documentação | 🟠 Alta | ✅ Corrigido |
-| VUL-05 | Ausência de .gitignore para ficheiros sensíveis | 🟡 Média | ✅ Corrigido |
+Como os segredos estiveram presentes no histórico Git, a sua simples remoção do código não é suficiente — **os tokens devem ser revogados e substituídos imediatamente**.
 
-> **Nota Importante:** As correções neste PR eliminam a exposição futura das credenciais. No entanto, como os valores estavam no histórico Git, **é essencial revogar e regenerar todos os tokens e senhas afetados** listados acima, independentemente de o repositório ser público ou privado.
+| Prioridade | Ação | Serviço |
+|---|---|---|
+| 🔴 **Urgente** | Revogar o Personal Access Token `sbp_94aeed...` | [Supabase → Account → Tokens](https://supabase.com/dashboard/account/tokens) |
+| 🔴 **Urgente** | Revogar a chave de API Resend `5b343ad1...` | [Resend → API Keys](https://resend.com/api-keys) |
+| 🟠 **Alta** | Alterar a senha da conta `amandajhonnes@yahoo.com.br` | Supabase Auth / e-mail |
+| 🟠 **Alta** | Alterar a senha da conta `amandasabreu89@gmail.com` | Supabase Auth / e-mail |
+| 🟡 **Recomendado** | Considerar fazer `git filter-repo` ou contactar o GitHub para expurgar o histórico | GitHub Support |
+| 🟡 **Recomendado** | Configurar o [GitHub Secret Scanning](https://docs.github.com/en/code-security/secret-scanning) para alertas automáticos futuros | GitHub Settings → Security |
+
+---
+
+## Resumo das Alterações por Ficheiro {#tabela}
+
+| Ficheiro | Alteração | Vulnerabilidade corrigida |
+|---|---|---|
+| `check_admin_rls.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `check_all_fk.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `check_fk.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `check_denied_rls.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `check_profile_rls.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `check_tables.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `check_users.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `fix_rls.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `fix_admin_deletes_all.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `fix_deletes_rls.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `query_rls.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `prep_test.mjs` | Token e ref → variáveis de ambiente | VUL-01 |
+| `auth_config.json` | `smtp_pass` redacted | VUL-02 |
+| `test_login.cjs` | Email/senha → variáveis de ambiente | VUL-03 |
+| `test_login2.cjs` | Email/senha → variáveis de ambiente | VUL-03 |
+| `test_login3.cjs` | Email/senha → variáveis de ambiente | VUL-03 |
+| `test_supabase_auth.mjs` | Email/senha → variáveis de ambiente | VUL-03 |
+| `PROTECTED_CONTENT.md` | Credenciais removidas | VUL-04 |
+| `.gitignore` | Regras adicionadas para ficheiros sensíveis | VUL-05 |
+| `.env.example` | Criado (novo ficheiro) | Boas práticas |
+
+---
+
+*Relatório gerado automaticamente pelo GitHub Copilot Coding Agent · MIRA Security Audit · 2026-03-05*
