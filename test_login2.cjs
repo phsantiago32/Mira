@@ -1,6 +1,14 @@
 const puppeteer = require('puppeteer');
 
 (async () => {
+    const testEmail = process.env.TEST_USER_EMAIL;
+    const testPassword = process.env.TEST_USER_PASSWORD;
+
+    if (!testEmail || !testPassword) {
+        console.error('Error: TEST_USER_EMAIL and TEST_USER_PASSWORD environment variables must be set.');
+        process.exit(1);
+    }
+
     const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
     const page = await browser.newPage();
 
@@ -19,8 +27,8 @@ const puppeteer = require('puppeteer');
     await page.waitForSelector('input[type="text"]');
 
     console.log('Typing credentials...');
-    await page.type('input[type="text"]', 'amandajhonnes@yahoo.com.br');
-    await page.type('input[type="password"]', 'Britney');
+    await page.type('input[type="text"]', testEmail);
+    await page.type('input[type="password"]', testPassword);
 
     console.log('Clicking login...');
     await page.click('button[type="submit"]');

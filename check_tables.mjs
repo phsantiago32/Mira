@@ -1,6 +1,11 @@
 import fs from 'fs';
-const token = 'sbp_94aeed3fe712bdf7ff4a5c4301037568675fd933';
-const ref = 'ychwhxkxsxmuvabxlyjn';
+const token = process.env.SUPABASE_TOKEN;
+const ref = process.env.SUPABASE_PROJECT_REF;
+
+if (!token || !ref) {
+  console.error('Error: SUPABASE_TOKEN and SUPABASE_PROJECT_REF environment variables must be set.');
+  process.exit(1);
+}
 
 async function run() {
     const query = `SELECT tablename FROM pg_tables WHERE schemaname = 'public';`;

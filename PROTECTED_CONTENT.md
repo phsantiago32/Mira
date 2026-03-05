@@ -767,15 +767,15 @@ const isAuthor = post.authorId === user.id || post.authorName === user.name;
 ## 🔐 ACESSOS E CREDENCIAIS OFICIAIS
 
 > [!IMPORTANT]
-> Estes são os acessos permanentes da proprietária. NUNCA esquecer.
+> Credenciais de acesso devem ser armazenadas em gestor de palavras-passe (ex: Bitwarden, 1Password) e **nunca** em texto simples num repositório. As credenciais que estavam aqui foram removidas por razões de segurança.
 
 **Utilizador Comum:**
-- **Email**: `amandajhonnes@yahoo.com.br`
-- **Senha**: `Britney`
+- **Email**: *(ver gestor de palavras-passe)*
+- **Senha**: *(ver gestor de palavras-passe)*
 
 **Admin Hub (Acesso Total):**
-- **Email**: `amandasabreu89@gmail.com`
-- **Senha**: `Britney`
+- **Email**: *(ver gestor de palavras-passe)*
+- **Senha**: *(ver gestor de palavras-passe)*
 
 ---
 *Manual de Proteção gerido pelo Agente Antigravity conforme ordens da Proprietária.*

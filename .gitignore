@@ -22,3 +22,23 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files – never commit secrets
+.env
+.env.local
+.env.*.local
+
+# Supabase auth config exports – may contain SMTP tokens and other secrets
+auth_config.json
+auth_config_after.json
+auth_update.json
+
+# Script output / query result artifacts
+rls_checked.json
+rls_out.json
+fk_checked.json
+all_fk_checked.json
+tables_checked.json
+
+# Test screenshots
+test_admin_screenshot.png

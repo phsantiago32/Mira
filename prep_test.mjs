@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const token = 'sbp_94aeed3fe712bdf7ff4a5c4301037568675fd933';
-const ref = 'ychwhxkxsxmuvabxlyjn';
+const token = process.env.SUPABASE_TOKEN;
+const ref = process.env.SUPABASE_PROJECT_REF;
 const TEST_ID = 'test-fake-user-123';
+
+if (!token || !ref) {
+  console.error('Error: SUPABASE_TOKEN and SUPABASE_PROJECT_REF environment variables must be set.');
+  process.exit(1);
+}
 
 async function run() {
     // 1. Fetch available profiles to see if we have our admin user ID
