@@ -22,6 +22,15 @@ export const templates: DocumentTemplate[] = [
         fields: [...standardFields, { id: 'visa_entry', label: 'Tipo de Visto de Entrada', placeholder: 'Ex: D3, D7, CPLP', type: 'text' }]
     },
     {
+        id: 'aima_ar_art122', title: 'Requerimento de Residência - Artigo 122.º (Regime Especial)', category: CATEGORIES.IMMIGRATION, complexity: 'Medium', authority: 'AIMA', location: 'Balcão AIMA',
+        description: 'Pedido de residência por dispensa de visto (ex: filhos em PT, saúde, nascidos cá).',
+        explanation: 'expl_aima_ar_art122',
+        purpose: 'Legalização direta em Portugal por situações de exceção familiar ou pessoal.',
+        tips: 'Verifique se cumpre um dos 18 sub-artigos possíveis do Art. 122.º.',
+        requirements: ['Passaporte', 'Atestado de Residência', 'Provas (Certidões/Atestados)'],
+        fields: [...standardFields, { id: 'art122_reason', label: 'Motivo do Artigo 122.º', placeholder: 'Ex: Ascendente de Menor, Saúde, etc.', type: 'text' }]
+    },
+    {
         id: 'aima_ar_renovacao', title: 'Requerimento de Renovação de Autorização de Residência', category: CATEGORIES.IMMIGRATION, complexity: 'Medium', authority: 'AIMA', location: 'Portal/Balcão AIMA',
         description: 'Pedido para renovar o título de residência antes do fim da sua validade.',
         explanation: 'expl_aima_ar_renovacao',

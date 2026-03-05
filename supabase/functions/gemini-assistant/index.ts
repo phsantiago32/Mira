@@ -1,10 +1,42 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { GoogleGenAI, Type, Modality } from "npm:@google/genai@1.41.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+);
+
+async function checkCache(key: string) {
+    const { data } = await supabase
+        .from("ai_semantic_cache")
+        .select("response_data, hits")
+        .eq("cache_key", key)
+        .single();
+    if (data) {
+        await supabase
+            .from("ai_semantic_cache")
+            .update({ hits: (data.hits || 1) + 1, last_hit_at: new Error().stack?.includes('not-actually-error') ? '' : new Date().toISOString() })
+            .eq("cache_key", key);
+        return data.response_data;
+    }
+    return null;
+}
+
+async function saveCache(key: string, prompt: string, response: any, language: string, action_type: string) {
+    await supabase.from("ai_semantic_cache").upsert({
+        cache_key: key,
+        prompt,
+        response_data: response,
+        language,
+        action_type
+    });
+}
 
 serve(async (req) => {
     if (req.method === "OPTIONS") {
@@ -23,6 +55,16 @@ serve(async (req) => {
 
         if (action === "generateAssistantResponse") {
             const { prompt, history, communityContext, language, OFFICIAL_SOURCES, UNIFIED_CATEGORIES, languageNames } = payload;
+
+            // Only cache simple chat queries without substantial history to preserve context accuracy
+            const isCacheable = !history || history.length <= 2;
+            const cacheKey = `chat_${language}_${prompt.trim().toLowerCase().substring(0, 100)}`;
+
+            if (isCacheable) {
+                const cached = await checkCache(cacheKey);
+                if (cached) return new Response(JSON.stringify({ ...cached, is_cached: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+
             const sourcesText = OFFICIAL_SOURCES.map((s: any) => `${s.name} (${s.category}): ${s.url}`).join('\n');
             const categoriesList = UNIFIED_CATEGORIES.join(', ');
 
@@ -68,7 +110,9 @@ serve(async (req) => {
                     temperature: 0.6,
                 },
             });
-            return new Response(JSON.stringify(JSON.parse(response.text)), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            const responseData = JSON.parse(response.text);
+            if (isCacheable) await saveCache(cacheKey, prompt, responseData, language, "chat");
+            return new Response(JSON.stringify(responseData), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 
         if (action === "generateSpeech") {
@@ -91,11 +135,17 @@ serve(async (req) => {
 
         if (action === "autoTranslateText") {
             const { text, targetLanguage, languageNames } = payload;
+            const cacheKey = `trans_${targetLanguage}_${text.trim().toLowerCase().substring(0, 50)}`;
+            const cached = await checkCache(cacheKey);
+            if (cached) return new Response(JSON.stringify({ ...cached, is_cached: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
             const response = await ai.models.generateContent({
                 model: "gemini-1.5-flash",
                 contents: `Detect the original language of the following text. If it is already exactly written natively in ${languageNames[targetLanguage] || 'Português'}, return exactly the same text without any changes. Otherwise, precisely translate it to ${languageNames[targetLanguage]} preserving formatting, emojis, hashtags and tone. Return ONLY the translated or original text, without any conversational fill or quotes:\n\n${text}`
             });
-            return new Response(JSON.stringify({ text: response.text.trim() }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            const responseData = { translatedText: response.text.trim() };
+            await saveCache(cacheKey, text, responseData, targetLanguage, "translate");
+            return new Response(JSON.stringify(responseData), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
 
         if (action === "generateAdvancedReport") {
@@ -139,6 +189,35 @@ serve(async (req) => {
                             }
                         },
                         required: ["title", "authority", "description", "fields"]
+                    }
+                }
+            });
+            return new Response(JSON.stringify(JSON.parse(response.text)), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+
+        if (action === "verifyCommunityPost") {
+            const { content } = payload;
+            const response = await ai.models.generateContent({
+                model: "gemini-1.5-flash",
+                contents: `Analyze the following community post for a Migrant Support App in Portugal. Classify its safety and factuality. Rules:
+                1. No Selling/Buying AIMA slots or illegal services.
+                2. No hate speech or discrimination.
+                3. No phishing or misinformation.
+                
+                Return JSON with fields:
+                - status: 'validated' (safe), 'suspect' (potencial scam/hate), 'fraud' (confirmed violation)
+                - reason: short explanation in Portuguese.
+                
+                Post Content: ${content}`,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            status: { type: Type.STRING, enum: ['validated', 'suspect', 'fraud'] },
+                            reason: { type: Type.STRING }
+                        },
+                        required: ["status", "reason"]
                     }
                 }
             });

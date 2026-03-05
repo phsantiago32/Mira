@@ -40,6 +40,7 @@ export const adminService = {
             .eq('id', userId);
 
         if (error) throw error;
+        await this.logAdminAction('toggle_block_user', { userId, isBlocked });
     },
 
     /**
@@ -127,6 +128,24 @@ export const adminService = {
             .eq('id', postId);
 
         if (error) throw error;
+        await this.logAdminAction('delete_post', { postId });
+    },
+
+    /**
+     * Log administrative actions for audit
+     */
+    async logAdminAction(action: string, metadata: any) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await supabase.from('activity_logs').insert([{
+            user_id: user.id,
+            action,
+            metadata: {
+                ...metadata,
+                timestamp: new Date().toISOString()
+            }
+        }]);
     },
 
     /**
@@ -279,6 +298,8 @@ export const adminService = {
         // Deletar o histórico da denúncia em si
         await supabase.from('community_reports').delete().eq('id', r.id);
         await supabase.from('reports').delete().eq('id', r.id);
+
+        await this.logAdminAction('moderation_report_resolve', { reportId: r.id, targetId, isPost });
     },
 
     /**
@@ -319,5 +340,42 @@ export const adminService = {
     async deleteAIKnowledge(id: string) {
         const { error } = await supabase.from('suggestions').delete().eq('id', id);
         if (error) throw error;
+    },
+
+    /**
+     * System Monitoring Data
+     */
+    async fetchSystemHealth() {
+        const { data: feedback } = await supabase.from('ai_feedback').select('*');
+        const { count: logsCount } = await supabase.from('activity_logs').select('*', { count: 'exact', head: true });
+        const { data: cacheStats } = await supabase.from('ai_semantic_cache').select('hits');
+
+        const totalFeedback = feedback?.length || 0;
+        const helpfulCount = feedback?.filter(f => f.is_helpful).length || 0;
+        const totalCacheHits = cacheStats?.reduce((acc, curr) => acc + (curr.hits || 0), 0) || 0;
+
+        return {
+            aiFeedback: {
+                total: totalFeedback,
+                helpful: helpfulCount,
+                unhelpful: totalFeedback - helpfulCount,
+                ratio: totalFeedback > 0 ? Math.round((helpfulCount / totalFeedback) * 100) : 100
+            },
+            cacheHits: totalCacheHits,
+            totalAuditLogs: logsCount || 0,
+            recentLogs: await this.fetchRecentAuditLogs()
+        };
+    },
+
+    async fetchRecentAuditLogs() {
+        const { data } = await supabase
+            .from('activity_logs')
+            .select(`
+                *,
+                profiles (name)
+            `)
+            .order('created_at', { ascending: false })
+            .limit(10);
+        return data || [];
     }
 };

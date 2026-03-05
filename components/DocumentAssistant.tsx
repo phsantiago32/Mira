@@ -14,6 +14,7 @@ import { t } from '../utils/translations';
 import { supabase } from '../lib/supabase';
 import { templates, serviceGuides } from '../utils/documentsDatabase';
 import { RegularizationWizard } from './RegularizationWizard';
+import { useToast } from './Toast';
 
 interface DocumentAssistantProps {
     tasks: DocumentTask[];
@@ -30,12 +31,11 @@ interface DocumentAssistantProps {
 }
 
 export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
-    addToHistory,
-    onEarnPoints,
-    onViewChange,
-    language
+    tasks, chatSessions, drafts, setDrafts, history, addToHistory,
+    onOpenSession, onToggleTask, onEarnPoints, onViewChange, language
 }) => {
-    const [activeTab, setActiveTab] = useState<'docs' | 'guides'>('guides');
+    const { showToast } = useToast();
+    const [activeTab, setActiveTab] = useState<'docs' | 'wizard'>('docs');
     const [activeScreen, setActiveScreen] = useState<'gallery' | 'form' | 'success' | 'guide_view'>('gallery');
     const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
     const [selectedGuide, setSelectedGuide] = useState<any | null>(null);
@@ -70,10 +70,14 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
     const generatePDF = async () => {
         if (!selectedTemplate) return;
         setIsGenerating(true);
+
+        // Phase 3.2: Async Job UX - Notify user that processing is happening
+        showToast("O MIRA está a preparar o teu documento... Podes continuar a navegar se quiseres!", "info");
+
         try {
             const pdfResult = await generateOfficialPDF(selectedTemplate.title, formData);
 
-            // Tenta obter o usuário atual para upload no Supabase
+            // Tenta obter o usuário atual para upload no Supabase e Notificação
             supabase.auth.getSession().then(({ data: { session } }) => {
                 if (session?.user) {
                     const userId = session.user.id;
@@ -101,6 +105,15 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                                     form_data: formData,
                                     file_url: storageUrl,
                                     is_draft: false
+                                }]).then();
+
+                                // Notify user persistently
+                                supabase.from('notifications').insert([{
+                                    user_id: userId,
+                                    type: 'docs',
+                                    title: 'Documento Pronto! 📄',
+                                    message: `O seu documento "${selectedTemplate.title}" foi gerado e guardado na sua nuvem MIRA.`,
+                                    link: '/documentos'
                                 }]).then();
                             } else {
                                 console.error("Erro ao fazer upload para Storage:", uploadError);
@@ -147,6 +160,7 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
             });
 
             onEarnPoints(50);
+            showToast("Documento gerado com sucesso!", "success");
             setActiveScreen('success');
         } catch (error: any) {
             console.error("Erro na geração de documento:", error);

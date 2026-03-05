@@ -190,13 +190,6 @@ export const PrivacyPage: React.FC<{ language: string }> = ({ language }) => {
               <span className="text-xs"><strong>{t('privacy_s4_rule3_title', language)}</strong><br />{t('privacy_s4_rule3_desc', language)}</span>
             </li>
           </ul>
-
-          <button
-            onClick={() => alert("Pedido de download dos seus dados enviado. Receberá um arquivo JSON em breve.")}
-            className="w-full flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-mira-green bg-mira-green/10 border border-mira-green/30 py-4 rounded-2xl hover:bg-mira-green hover:text-white transition-all active:scale-[0.98] shadow-sm mt-6"
-          >
-            <Database size={16} /> {t('privacy_s4_btn', language)}
-          </button>
         </Section>
 
         <Section id="ai" title={t('privacy_s5_title', language)} icon={Bot} colorClass="bg-mira-blue/10 text-mira-blue border border-mira-blue/20">
@@ -217,18 +210,7 @@ export const PrivacyPage: React.FC<{ language: string }> = ({ language }) => {
           </div>
         </Section>
 
-        <Section id="data" title={t('privacy_s6_title', language)} icon={Globe} colorClass="bg-mira-yellow/10 text-mira-yellow-dark border border-mira-yellow/20">
-          <p>
-            {t('privacy_s6_p1', language)}
-          </p>
-          <p className="mt-3">
-            {t('privacy_s6_p2', language)}
-          </p>
-          <div className="mt-4 bg-gradient-to-r from-mira-yellow/10 to-yellow-500/10 p-5 rounded-2xl text-[12px] text-mira-yellow-dark font-bold border border-mira-yellow/20 shadow-sm">
-            <span className="font-black uppercase tracking-widest text-[9px] block mb-2 opacity-60">{t('privacy_s6_box_title', language)}</span>
-            {t('privacy_s6_box_desc', language)}
-          </div>
-        </Section>
+
 
         <Section id="terms" title={t('privacy_s7_title', language)} icon={FileText} colorClass="bg-slate-900 text-white border border-slate-800">
           <div className="space-y-4">

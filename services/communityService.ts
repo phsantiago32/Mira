@@ -77,6 +77,72 @@ export const communityService = {
         });
     },
 
+    async fetchPostById(postId: string, userId?: string): Promise<Post | null> {
+        const { data, error } = await supabase
+            .from('posts')
+            .select(`
+                *,
+                author:profiles!posts_author_id_fkey (name, avatar_url, bio),
+                comments (
+                    id, content, created_at, author_id, likes,
+                    author:profiles!comments_author_id_fkey (name, avatar_url),
+                    comment_likes (user_id)
+                ),
+                post_votes (id, user_id, vote_type)
+            `)
+            .eq('id', postId)
+            .single();
+
+        if (error || !data) {
+            console.error('Error fetching post by ID:', error);
+            return null;
+        }
+
+        const likesCount = data.post_votes?.filter((v: any) => v.vote_type === 'like').length || 0;
+        const usefulCount = data.post_votes?.filter((v: any) => v.vote_type === 'useful').length || 0;
+        const fakeCount = data.post_votes?.filter((v: any) => v.vote_type === 'fake').length || 0;
+
+        const formattedComments: Comment[] = (data.comments || []).map((c: any) => ({
+            id: c.id,
+            authorId: c.author_id,
+            authorName: c.author?.name || 'Membro Oculto',
+            authorAvatar: c.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.author?.name || 'M')}&background=f97316&color=fff&bold=true&size=200`,
+            content: c.content,
+            timestamp: new Date(c.created_at).toLocaleDateString(),
+            likes: c.likes || 0,
+            isLikedByUser: userId ? (c.comment_likes || []).some((cl: any) => cl.user_id === userId) : false
+        }));
+
+        const isLikedByUser = userId ? data.post_votes?.some((v: any) => v.vote_type === 'like' && v.user_id === userId) : false;
+        const factVote = userId ? data.post_votes?.find((v: any) => (v.vote_type === 'useful' || v.vote_type === 'fake') && v.user_id === userId) : null;
+        const userVote = factVote ? (factVote.vote_type === 'useful' ? 'true' : 'false') : undefined;
+
+        return {
+            id: data.id,
+            authorId: data.author_id,
+            authorName: data.author?.name || 'Membro Oculto',
+            authorAvatar: data.author?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.author?.name || 'M')}&background=f97316&color=fff&bold=true&size=200`,
+            authorBio: data.author?.bio || '',
+            title: data.title || 'Post Comunitário',
+            content: data.content,
+            category: data.category,
+            workTopic: data.work_topic,
+            geoTag: data.geo_tag,
+            backgroundImage: data.background_image,
+            tags: data.tags || [],
+            likes: likesCount,
+            isLikedByUser,
+            userVote,
+            comments: formattedComments,
+            isVerified: data.is_verified || false,
+            urgency: data.urgency || 0,
+            usefulVotes: usefulCount,
+            fakeVotes: fakeCount,
+            timestamp: new Date(data.created_at).toLocaleDateString(),
+            reports: data.reports || 0
+        } as Post;
+    },
+
     async createPost(postData: any) {
         const { data, error } = await supabase.from('posts').insert([
             {

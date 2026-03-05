@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, FastForward } from 'lucide-react';
 
 /**
  * SplashScreen
@@ -66,6 +66,15 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
                 {/* Efeito sutil de brilho azul ciano no fundo para remeter à tecnologia (Atrás/Mixado) */}
                 <div className="absolute inset-0 bg-gradient-to-t from-mira-blue/10 via-transparent to-transparent pointer-events-none mix-blend-color z-10"></div>
 
+                {/* Botões de Áudio e Pular Intro */}
+                {/* Botão de Pular Intro */}
+                <button
+                    onClick={triggerFadeOut}
+                    className="absolute bottom-8 right-20 sm:bottom-12 sm:right-20 p-3.5 sm:p-4 bg-white/10 backdrop-blur-xl text-white rounded-full hover:bg-white/20 transition-all border border-white/20 z-30 shadow-2xl active:scale-95"
+                    aria-label="Pular intro"
+                >
+                    <FastForward size={20} className="sm:w-6 sm:h-6" />
+                </button>
                 {/* Botão de Toggle Som */}
                 <button
                     onClick={() => setIsMuted(!isMuted)}

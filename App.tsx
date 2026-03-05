@@ -350,7 +350,19 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-
+            {user && (
+              <button
+                onClick={() => setCurrentView(ViewType.PROFILE)}
+                className={`relative p-2.5 rounded-2xl flex items-center transition-all ${isAdmin ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'} hover:scale-105 active:scale-95`}
+              >
+                <Bell size={20} />
+                {user.unread_notifications > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white animate-bounce-slow">
+                    {user.unread_notifications > 9 ? '+9' : user.unread_notifications}
+                  </span>
+                )}
+              </button>
+            )}
             <div className="flex items-center gap-3">
               <div className="relative">
                 <button

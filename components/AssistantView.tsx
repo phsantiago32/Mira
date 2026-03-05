@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, Sparkles, AlertCircle, Bot, Volume2, VolumeX, Play, RotateCcw, Loader2, Square } from 'lucide-react';
+import { Send, Mic, Sparkles, AlertCircle, Bot, Volume2, VolumeX, Play, RotateCcw, Loader2, Square, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { generateAssistantResponse } from '../services/geminiService';
 import { audioService } from '../services/audioService';
 import { Message } from '../types';
@@ -43,7 +43,7 @@ interface AssistantViewProps {
 }
 
 const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
-  const [messages, setMessages] = useState<(Message & { category?: string, audioBase64?: string })[]>([]);
+  const [messages, setMessages] = useState<(Message & { category?: string, audioBase64?: string, feedback?: 'helpful' | 'not_helpful' })[]>([]);
 
   useEffect(() => {
     const welcomeMsgs: Record<string, string> = {
@@ -167,6 +167,32 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
     }
   };
 
+  const handleFeedback = async (msgId: string, isHelpful: boolean) => {
+    const msg = messages.find(m => m.id === msgId);
+    if (!msg || msg.feedback) return;
+
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedback: isHelpful ? 'helpful' : 'not_helpful' } : m));
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Find previous user message to store as prompt context
+      const msgIndex = messages.findIndex(m => m.id === msgId);
+      const prompt = msgIndex > 0 ? messages[msgIndex - 1].text : '';
+
+      await supabase.from('ai_feedback').insert([{
+        user_id: user.id,
+        prompt: prompt,
+        response: msg.text,
+        is_helpful: isHelpful,
+        cache_hit: (msg as any).isFromCache || false
+      }]);
+    } catch (e) {
+      console.error("Feedback error:", e);
+    }
+  };
+
   const handleAudioAction = (msg: (Message & { audioBase64?: string })) => {
     if (!voiceEnabled) {
       alert("Ative o som no topo do ecrã primeiro (ícone principal de volume).");
@@ -188,12 +214,12 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-white shadow-sm font-['Plus_Jakarta_Sans'] overflow-hidden relative rounded-xl md:rounded-3xl border border-white/5">
+    <div className="flex flex-col h-full bg-white/10 backdrop-blur-xl text-white shadow-sm font-['Plus_Jakarta_Sans'] overflow-hidden relative rounded-xl md:rounded-3xl border border-white/10">
       <div className="absolute top-[-20%] left-[-10%] w-[80vw] h-[80vw] bg-mira-orange/20 rounded-full blur-[120px] pointer-events-none opacity-40"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-mira-blue/20 rounded-full blur-[100px] pointer-events-none opacity-30"></div>
       <div className="absolute top-[30%] left-[50%] -translate-x-1/2 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
 
-      <div className="bg-slate-950/40 backdrop-blur-3xl border-b border-white/10 px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between z-20 shrink-0 shadow-xl sticky top-0">
+      <div className="bg-white/5 backdrop-blur-lg border-b border-white/15 px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between z-20 shrink-0 shadow-xl sticky top-0 backdrop-filter">
         <div className="flex items-center gap-2">
           <div className="relative">
             <div className="absolute inset-0 bg-mira-orange rounded-lg blur opacity-30 animate-pulse"></div>
@@ -254,7 +280,26 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
               </p>
 
               {msg.role === 'assistant' && (
-                <div className="flex items-center justify-end mt-5 pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between mt-5 pt-4 border-t border-white/10">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handleFeedback(msg.id, true)}
+                      disabled={!!msg.feedback}
+                      className={`p-2 rounded-xl transition-all ${msg.feedback === 'helpful' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-white/5 text-slate-400 hover:text-green-400 hover:bg-white/10'} disabled:opacity-50`}
+                      title="Útil"
+                    >
+                      <ThumbsUp size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleFeedback(msg.id, false)}
+                      disabled={!!msg.feedback}
+                      className={`p-2 rounded-xl transition-all ${msg.feedback === 'not_helpful' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/5 text-slate-400 hover:text-red-400 hover:bg-white/10'} disabled:opacity-50`}
+                      title="Não foi útil"
+                    >
+                      <ThumbsDown size={14} />
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => handleAudioAction(msg)}
                     className={`flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-2xl transition-all shadow-xl font-black text-[10px] uppercase tracking-widest ${isPlaying === msg.id ? 'text-white bg-mira-blue ring-4 ring-mira-blue/20 scale-105' : 'text-slate-400 bg-white/5 hover:text-white hover:bg-white/10 border border-white/5 hover:scale-105 active:scale-95'}`}
@@ -286,13 +331,31 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
       </div>
 
       <div className="p-4 sm:p-6 pb-24 sm:pb-8 bg-slate-950/90 backdrop-blur-3xl border-t border-white/10 z-20 shrink-0 relative w-full pt-8">
+        {/* Quick Actions */}
+        <div className="max-w-3xl mx-auto flex gap-2 overflow-x-auto no-scrollbar pb-4 mb-2">
+          {[
+            { tag: 'AIMA', text: language === 'PT' ? 'Como agendar na AIMA?' : 'How to schedule at AIMA?' },
+            { tag: 'NIF', text: language === 'PT' ? 'Onde tirar o NIF?' : 'Where to get NIF?' },
+            { tag: 'Manifestação', text: language === 'PT' ? 'O que é Manifestação de Interesse?' : 'What is Expression of Interest?' },
+            { tag: 'Saúde', text: language === 'PT' ? 'Como aceder ao SNS?' : 'How to access SNS?' }
+          ].map((action, i) => (
+            <button
+              key={i}
+              onClick={() => { setInput(action.text); }}
+              className="whitespace-nowrap px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:border-white/20 transition-all active:scale-95"
+            >
+              {action.tag}
+            </button>
+          ))}
+        </div>
+
         <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-5 py-2 bg-slate-900 border border-white/10 rounded-full flex items-center gap-2 shadow-2xl z-30">
           <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-[pulse_2s_infinite]"></div>
           <span className="text-[9px] font-black text-white/70 uppercase tracking-widest whitespace-nowrap">IA Sincronizada 2026</span>
         </div>
 
         <div className="flex flex-col gap-3 max-w-3xl mx-auto w-full">
-          <div className="relative w-full flex flex-col bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[2rem] p-2 focus-within:ring-2 focus-within:ring-mira-orange/30 focus-within:bg-slate-900/80 transition-all shadow-2xl group overflow-hidden">
+          <div className="relative w-full flex flex-col bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-3 focus-within:ring-2 focus-within:ring-mira-orange/30 focus-within:bg-slate-900/80 transition-all shadow-2xl group overflow-hidden">
             <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-mira-orange to-mira-blue opacity-50"></div>
 
             <textarea
@@ -302,13 +365,13 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
                     language === 'ES' ? 'Pregunta a MIRA... (Texto o Voz)' :
                       'Demandez à MIRA... (Texte ou Voix)'
               }
-              className="w-full bg-transparent px-4 sm:px-5 pt-4 pb-14 outline-none text-[16px] sm:text-[17px] font-medium text-white placeholder:text-slate-500 resize-none min-h-[64px] max-h-[200px] overflow-y-auto no-scrollbar"
+              className="w-full bg-transparent px-5 sm:px-6 pt-5 pb-16 outline-none text-[16px] sm:text-[17px] font-medium text-white placeholder:text-slate-500 resize-none min-h-[80px] max-h-[250px] overflow-y-auto no-scrollbar"
               rows={1}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
                 e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+                e.target.style.height = Math.min(e.target.scrollHeight, 250) + 'px';
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -318,22 +381,22 @@ const AssistantView: React.FC<AssistantViewProps> = ({ language }) => {
               }}
             />
 
-            <div className="absolute bottom-2 right-2 flex items-center gap-2">
+            <div className="absolute bottom-3 right-3 flex items-center gap-2">
               <button
                 onClick={toggleListening}
-                className={`p-3 sm:p-3.5 transition-all rounded-full shadow-lg flex items-center justify-center ${isListening
+                className={`p-3.5 sm:p-4 transition-all rounded-full shadow-lg flex items-center justify-center ${isListening
                   ? 'text-white bg-red-600 border-red-500 animate-pulse ring-4 ring-red-500/30'
                   : 'text-slate-400 bg-white/5 hover:text-white hover:bg-white/10 active:scale-95'
                   }`}
               >
-                <Mic size={18} />
+                <Mic size={20} />
               </button>
               <button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="p-3 sm:p-3.5 bg-white text-slate-900 rounded-full disabled:opacity-20 disabled:scale-95 transition-all hover:bg-mira-orange hover:text-white shadow-xl active:scale-90 flex items-center justify-center"
+                className="p-3.5 sm:p-4 bg-white text-slate-900 rounded-full disabled:opacity-20 disabled:scale-95 transition-all hover:bg-mira-orange hover:text-white shadow-xl active:scale-90 flex items-center justify-center transform hover:rotate-6 transition-transform"
               >
-                <Send size={18} className="translate-x-[1px] translate-y-[-1px]" />
+                <Send size={20} className="translate-x-[1px] translate-y-[-1px]" />
               </button>
             </div>
           </div>

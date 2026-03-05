@@ -4,7 +4,7 @@ import { User, Post, ViewType } from '../types';
 import {
     Users, ShieldAlert, MailX, Trash2, Ban, ShieldCheck,
     Search, Filter, ChevronRight, AlertCircle, CheckCircle2,
-    MoreVertical, UserMinus, ShieldOff, MessageSquare, Sparkles, RefreshCcw, Briefcase, Map as MapIcon, X, MessageCircle, AlertTriangle
+    MoreVertical, UserMinus, ShieldOff, MessageSquare, Sparkles, RefreshCcw, Briefcase, Map as MapIcon, X, MessageCircle, AlertTriangle, Activity, Database, HeartPulse
 } from 'lucide-react';
 import { COLORS } from '../constants';
 import { supabase } from '../lib/supabase';
@@ -16,7 +16,7 @@ interface AdminHubProps {
 }
 
 export const AdminHub: React.FC<AdminHubProps> = ({ onBack, onNavigateToPost }) => {
-    const [activeTab, setActiveTab] = useState<'users' | 'content' | 'suggestions' | 'knowledge'>('users');
+    const [activeTab, setActiveTab] = useState<'users' | 'content' | 'suggestions' | 'knowledge' | 'health'>('users');
     const [users, setUsers] = useState<User[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
     const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -30,6 +30,7 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack, onNavigateToPost }) 
     const [newKnowledge, setNewKnowledge] = useState({ topic: '', information: '', category: '', source: '' });
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
     const [processing, setProcessing] = useState<string | null>(null);
+    const [healthData, setHealthData] = useState<any>(null);
 
     useEffect(() => {
         loadData();
@@ -55,6 +56,9 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack, onNavigateToPost }) 
             } else if (activeTab === 'knowledge') {
                 const data = await adminService.fetchAIKnowledge();
                 setAIKnowledge(data);
+            } else if (activeTab === 'health') {
+                const data = await adminService.fetchSystemHealth();
+                setHealthData(data);
             }
         } catch (err) {
             setMessage({ text: 'Erro ao carregar dados', type: 'error' });
@@ -126,6 +130,12 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack, onNavigateToPost }) 
                         className={`flex-auto min-w-[120px] md:flex-none flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'knowledge' ? 'bg-white text-slate-900 shadow-xl scale-[1.02]' : 'text-white/60 hover:text-white'}`}
                     >
                         <MessageSquare size={16} /> Saber AI
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('health')}
+                        className={`flex-auto min-w-[120px] md:flex-none flex items-center justify-center gap-2 px-4 py-3 md:px-6 md:py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'health' ? 'bg-white text-slate-900 shadow-xl scale-[1.02]' : 'text-white/60 hover:text-white'}`}
+                    >
+                        <HeartPulse size={16} /> Saúde
                     </button>
                 </div>
             </div>
@@ -395,6 +405,72 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack, onNavigateToPost }) 
                                             <button onClick={() => handleAction(() => adminService.deleteAIKnowledge(k.id))} className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'health' && healthData && (
+                            <div className="space-y-8 animate-in fade-in duration-500">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="p-8 bg-slate-900 text-white rounded-[2.5rem] shadow-xl border border-white/5 overflow-hidden relative group">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Activity size={80} /></div>
+                                        <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Satisfação IA</p>
+                                        <h3 className="text-4xl font-black">{healthData.aiFeedback.ratio}%</h3>
+                                        <p className="text-[9px] font-bold text-emerald-400 mt-2 uppercase tracking-widest">{healthData.aiFeedback.helpful} Úteis / {healthData.aiFeedback.total} Total</p>
+                                    </div>
+                                    <div className="p-8 bg-mira-orange text-white rounded-[2.5rem] shadow-xl shadow-mira-orange/20 overflow-hidden relative group">
+                                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><Database size={80} /></div>
+                                        <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] mb-1">Performance Cache</p>
+                                        <h3 className="text-4xl font-black">{healthData.cacheHits}</h3>
+                                        <p className="text-[9px] font-bold text-white/80 mt-2 uppercase tracking-widest">Respostas Salvas Instantâneas</p>
+                                    </div>
+                                    <div className="p-8 bg-slate-50 text-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden relative group">
+                                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform"><ShieldCheck size={80} /></div>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Audit Logs Total</p>
+                                        <h3 className="text-4xl font-black text-slate-900">{healthData.totalAuditLogs}</h3>
+                                        <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest">Ações Seguras Registadas</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+                                        <Activity size={16} /> Registo de Auditoria Recente
+                                    </h3>
+                                    <div className="bg-white border border-slate-100 rounded-[2.5rem] overflow-hidden shadow-sm">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-slate-50 border-b border-slate-100">
+                                                    <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-400">Moderador</th>
+                                                    <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-400">Ação</th>
+                                                    <th className="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-slate-400">Data</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                                {healthData.recentLogs.map((log: any) => (
+                                                    <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-6 py-4">
+                                                            <span className="text-[11px] font-black text-slate-700">{log.profiles?.name || 'Sistema'}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-widest ${log.action === 'delete_post' ? 'bg-red-50 text-red-600' :
+                                                                    log.action.includes('block') ? 'bg-slate-900 text-white' : 'bg-blue-50 text-blue-600'
+                                                                }`}>
+                                                                {log.action.replace(/_/g, ' ')}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className="text-[10px] font-medium text-slate-400">{new Date(log.created_at).toLocaleString()}</span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {healthData.recentLogs.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan={3} className="px-6 py-10 text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">Nenhum registo disponível</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         )}

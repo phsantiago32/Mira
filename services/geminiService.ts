@@ -3,7 +3,12 @@ import { UNIFIED_CATEGORIES } from '../types';
 import { supabase } from '../lib/supabase';
 import { adminService } from './adminService';
 
+const AI_CACHE: Record<string, any> = {};
+
 export const generateAssistantResponse = async (prompt: string, history: { role: string, parts: { text: string }[] }[] = [], communityContext?: string, language: string = 'PT') => {
+  const cacheKey = `chat_${language}_${prompt}_${JSON.stringify(history.slice(-2))}`;
+  if (AI_CACHE[cacheKey]) return AI_CACHE[cacheKey];
+
   const languageNames: Record<string, string> = {
     'PT': 'Português',
     'EN': 'English',
@@ -43,7 +48,10 @@ export const generateAssistantResponse = async (prompt: string, history: { role:
       });
 
       if (error) throw new Error(error.message);
-      if (data && data.text) return data;
+      if (data && data.text) {
+        AI_CACHE[cacheKey] = data;
+        return data;
+      }
 
       throw new Error("No text returned from Gemini Assistant Edge Function");
     } catch (edgeError) {
@@ -88,8 +96,13 @@ export const generateSpeech = async (text: string, language: string = 'PT') => {
   }
 };
 
+const TRANSLATION_CACHE: Record<string, string> = {};
+
 export const autoTranslateText = async (text: string, targetLanguage: string): Promise<string> => {
   if (!text || !text.trim()) return text;
+
+  const cacheKey = `trans_${targetLanguage}_${text}`;
+  if (TRANSLATION_CACHE[cacheKey]) return TRANSLATION_CACHE[cacheKey];
 
   const langKey = targetLanguage.toUpperCase();
   const languageNames: Record<string, string> = {
@@ -131,7 +144,11 @@ export const autoTranslateText = async (text: string, targetLanguage: string): P
     });
 
     if (error) throw new Error(error.message);
-    return data?.text || text;
+    if (data?.translatedText) {
+      TRANSLATION_CACHE[cacheKey] = data.translatedText;
+      return data.translatedText;
+    }
+    return data?.translatedText || text;
   } catch (error) {
     console.error("AutoTranslate Final Fallback Error:", error);
     return text; // Return original text if everything fails

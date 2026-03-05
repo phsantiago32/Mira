@@ -255,7 +255,7 @@ export const HomeView: React.FC<HomeViewProps> = memo(({ user, onViewChange, lan
           <div className="flex items-center gap-2 mb-3 text-slate-300">
             <ShieldCheck size={16} />
           </div>
-          <p className="text-[7px] font-black text-slate-400 text-center uppercase tracking-normal px-4 w-full break-words opacity-60">
+          <p className="text-[6px] font-black text-slate-400 text-center uppercase tracking-tight px-4 w-full break-words opacity-60">
             {t('home_copyright', language)}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-3 mb-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">

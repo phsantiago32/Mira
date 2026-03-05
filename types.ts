@@ -154,6 +154,8 @@ export interface Post {
   comments: Comment[];
   isVerified: boolean;
   isFraudWarning: boolean;
+  aiStatus?: 'validated' | 'suspect' | 'fraud';
+  aiReason?: string;
   location?: string;
   timestamp: string;
   reports: number;

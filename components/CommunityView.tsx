@@ -13,8 +13,10 @@ import { t } from '../utils/translations';
 import { analytics } from '../services/analyticsService';
 import { communityService } from '../services/communityService';
 import { useToast } from './Toast';
+import { syncService } from '../services/syncService';
 
 import { TranslatedText } from './TranslatedText';
+import { PostCard } from './PostCard';
 
 const getCategoryKey = (cat: string) => {
   switch (cat) {
@@ -94,8 +96,6 @@ const CommunityView: React.FC<CommunityViewProps> = ({
   const [openPostMenu, setOpenPostMenu] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [translatedPosts, setTranslatedPosts] = useState<Set<string>>(new Set());
-  const isProcessingInteraction = useRef<Set<string>>(new Set());
-
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMorePosts, setHasMorePosts] = useState(true);
 
@@ -125,24 +125,63 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     }
   };
 
+  // Infinite Scroll Trigger
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && !isLoadingMore && hasMorePosts && activeCategory === 'Todos' && !searchFilter) {
+        handleLoadMore();
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isLoadingMore, hasMorePosts, activeCategory, searchFilter]);
+
+  // Debounced SQL sync for Likes and Votes
+  const syncQueue = useRef<Record<string, NodeJS.Timeout>>({});
+
+  const debouncedSync = (key: string, fn: () => Promise<any>) => {
+    if (syncQueue.current[key]) clearTimeout(syncQueue.current[key]);
+    syncQueue.current[key] = setTimeout(async () => {
+      try { await fn(); } catch (e) { }
+      delete syncQueue.current[key];
+    }, 1000); // 1s debounce for backend sync
+  };
+
   useEffect(() => {
     if (targetPostId) {
-      setTimeout(() => {
+      const tryScroll = () => {
         const el = document.getElementById(`post-${targetPostId}`);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           el.classList.add('ring-4', 'ring-blue-500/50', 'ring-offset-4', 'transition-all', 'duration-1000');
           setTimeout(() => {
             el.classList.remove('ring-4', 'ring-blue-500/50', 'ring-offset-4', 'transition-all', 'duration-1000');
-            if (onClearTargetPost) onClearTargetPost();
-          }, 2000);
-        } else {
-          // Maybe we need to load more? For now just try.
-          if (onClearTargetPost) onClearTargetPost();
+          }, 3000);
+          return true;
         }
-      }, 500); // small delay to let DOM paint
+        return false;
+      };
+
+      if (!tryScroll()) {
+        // If not found, fetch it specifically
+        communityService.fetchPostById(targetPostId, user.id).then(post => {
+          if (post) {
+            setMasterPosts(prev => {
+              if (prev.some(p => p.id === post.id)) return prev;
+              return [post, ...prev];
+            });
+            setTimeout(tryScroll, 500);
+          } else {
+            if (onClearTargetPost) onClearTargetPost();
+          }
+        }).catch(() => {
+          if (onClearTargetPost) onClearTargetPost();
+        });
+      } else {
+        if (onClearTargetPost) onClearTargetPost();
+      }
     }
-  }, [targetPostId, masterPosts]);
+  }, [targetPostId, masterPosts.length]); // Re-run if masterPosts changes (e.g. after fetch), masterPosts]);
 
   const topStories = useMemo(() => {
     return [...masterPosts].sort((a, b) => {
@@ -271,60 +310,34 @@ const CommunityView: React.FC<CommunityViewProps> = ({
 
   const handleLike = async (postId: string, commentId?: string) => {
     const interactionKey = commentId ? `like_comment_${commentId}` : `like_post_${postId}`;
-    if (isProcessingInteraction.current.has(interactionKey)) return;
-    isProcessingInteraction.current.add(interactionKey);
+    const isLiked = commentId ? likedComments.has(commentId) : likedPosts.has(postId);
 
-    try {
-      const isLiked = commentId ? likedComments.has(commentId) : likedPosts.has(postId);
-
-      setMasterPosts(prev => prev.map(p => {
-        if (p.id !== postId) return p;
-        if (!commentId) {
-          return {
-            ...p,
-            likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1,
-            isLikedByUser: !isLiked
-          };
-        }
-        return {
-          ...p,
-          comments: p.comments.map(c => c.id === commentId ? {
-            ...c,
-            likes: isLiked ? Math.max(0, c.likes - 1) : c.likes + 1,
-            isLikedByUser: !isLiked
-          } : c)
-        };
-      }));
-
-      if (commentId) {
-        const isActuallyLiked = likedComments.has(commentId);
-        setLikedComments(prev => {
-          const next = new Set(prev);
-          if (isActuallyLiked) next.delete(commentId); else next.add(commentId);
-          return next;
-        });
-        // background Sync
-        try {
-          await communityService.toggleCommentLike(commentId, user.id);
-        } catch (e) { }
-      } else {
-        setLikedPosts(prev => {
-          const next = new Set(prev);
-          if (isLiked) next.delete(postId); else next.add(postId);
-          return next;
-        });
-        // background Sync
-        try {
-          await communityService.voteOrLike(postId, user.id, 'like');
-        } catch (e) { }
+    // Optimistic UI
+    setMasterPosts(prev => prev.map(p => {
+      if (p.id !== postId) return p;
+      if (!commentId) {
+        return { ...p, likes: isLiked ? Math.max(0, p.likes - 1) : p.likes + 1, isLikedByUser: !isLiked };
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      // Add brief artificial delay to prevent UI glitching if users spam click
-      setTimeout(() => {
-        isProcessingInteraction.current.delete(interactionKey);
-      }, 500);
+      return {
+        ...p,
+        comments: p.comments.map(c => c.id === commentId ? { ...c, likes: isLiked ? Math.max(0, c.likes - 1) : c.likes + 1, isLikedByUser: !isLiked } : c)
+      };
+    }));
+
+    if (commentId) {
+      setLikedComments(prev => {
+        const next = new Set(prev);
+        if (isLiked) next.delete(commentId); else next.add(commentId);
+        return next;
+      });
+      debouncedSync(interactionKey, () => syncService.enqueue('like', { commentId, postId, userId: user.id }));
+    } else {
+      setLikedPosts(prev => {
+        const next = new Set(prev);
+        if (isLiked) next.delete(postId); else next.add(postId);
+        return next;
+      });
+      debouncedSync(interactionKey, () => syncService.enqueue('like', { postId, userId: user.id }));
     }
   };
 
@@ -343,12 +356,11 @@ const CommunityView: React.FC<CommunityViewProps> = ({
 
     try {
       const isMockPost = backupPostId === '1' || backupPostId.startsWith('p-');
-      let dbCommentId = `local-${Date.now()}`;
+      const dbCommentId = `local-${Date.now()}`;
 
-      // Real DB logic first, se não for mock post
+      // Real DB logic (queued for sync, works offline)
       if (!isMockPost) {
-        const dbComment = await communityService.createComment(backupPostId, user.id, finalContent);
-        if (dbComment) dbCommentId = dbComment.id;
+        syncService.enqueue('comment', { postId: backupPostId, userId: user.id, content: finalContent });
       }
 
       // Update UI
@@ -382,39 +394,25 @@ const CommunityView: React.FC<CommunityViewProps> = ({
     const currentVote = userVotes[postId];
     const newVote = isTrue ? 'true' : 'false';
     const isRemoving = currentVote === newVote;
+    const interactionKey = `vote_${postId}`;
 
     setMasterPosts(prev => prev.map(p => {
       if (p.id !== postId) return p;
       let useful = p.usefulVotes;
       let fake = p.fakeVotes;
-
       if (currentVote === 'true') useful = Math.max(0, useful - 1);
       if (currentVote === 'false') fake = Math.max(0, fake - 1);
-
-      if (!isRemoving) {
-        if (newVote === 'true') useful++;
-        if (newVote === 'false') fake++;
-      }
-      return {
-        ...p,
-        usefulVotes: useful,
-        fakeVotes: fake,
-        userVote: isRemoving ? undefined : newVote
-      };
+      if (!isRemoving) { if (newVote === 'true') useful++; else fake++; }
+      return { ...p, usefulVotes: useful, fakeVotes: fake, userVote: isRemoving ? undefined : newVote };
     }));
 
     setUserVotes(prev => {
       const next = { ...prev };
-      if (isRemoving) delete next[postId];
-      else next[postId] = newVote;
+      if (isRemoving) delete next[postId]; else next[postId] = newVote;
       return next;
     });
 
-    if (!isRemoving) onEarnPoints(5);
-
-    try {
-      await communityService.voteOrLike(postId, user.id, isTrue ? 'useful' : 'fake');
-    } catch (e) { }
+    debouncedSync(interactionKey, () => syncService.enqueue('vote', { postId, userId: user.id, voteType: isTrue ? 'useful' : 'fake' }));
   };
 
   const handleReportSubmit = async () => {
@@ -458,6 +456,23 @@ const CommunityView: React.FC<CommunityViewProps> = ({
       bio: 'Membro ativo da rede MIRA focado em integração e solidariedade em Portugal.',
       isVerified: authorId === 'a1'
     });
+  };
+
+  const handleReportAction = (postId: string, commentId?: string) => {
+    setReportingItem({ postId, commentId });
+  };
+
+  const handleToggleTranslate = (postId: string) => {
+    setTranslatedPosts(prev => {
+      const next = new Set(prev);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+  };
+
+  const handleReplyComment = (postId: string, replyToName: string) => {
+    setCommentingOn({ postId, replyToName });
   };
 
   return (
@@ -633,179 +648,38 @@ const CommunityView: React.FC<CommunityViewProps> = ({
         )}
 
         <div className="px-5 space-y-10">
-          {filteredPosts.length > 0 ? filteredPosts.map(post => {
-            const isPostLiked = likedPosts.has(post.id);
-            const isPostSaved = savedPostsIds.has(post.id);
-            const isAuthor = post.authorId === user.id || post.authorName === user.name;
-            const fontSizeClass = post.content.length < 80 ? 'text-2xl' : post.content.length < 160 ? 'text-lg' : 'text-sm';
-            return (
-              <div key={post.id} id={`post-${post.id}`} className="bg-white rounded-[3.5rem] overflow-hidden shadow-sm border border-slate-100 group transition-all hover:shadow-2xl">
-                <div className="h-[480px] relative overflow-hidden">
-                  <img src={post.backgroundImage} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Post Visual" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/60"></div>
-
-                  {/* Header: autor + menu 3 pontos IG style */}
-                  <div className="absolute top-6 left-6 right-6 flex justify-between items-center z-20">
-                    <div onClick={() => openMemberProfile(post.authorId, post.authorName, post.authorAvatar)} className="flex items-center gap-2.5 bg-white/10 backdrop-blur-2xl p-1.5 pr-4 rounded-full border border-white/20 cursor-pointer active:scale-95 shadow-2xl group/author">
-                      <img src={post.authorAvatar} className="w-8 h-8 rounded-full border border-white/40 shadow-sm" alt="" referrerPolicy="no-referrer" />
-                      <p className="text-[8px] font-black text-white uppercase tracking-widest leading-none opacity-90">{post.authorName}</p>
-                    </div>
-
-                    <div className="relative">
-                      <button onClick={(e) => { e.stopPropagation(); setOpenPostMenu(openPostMenu === post.id ? null : post.id); }} className="w-9 h-9 bg-white/15 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 hover:bg-white/30 active:scale-90 transition-all shadow-lg">
-                        <span style={{ color: 'white', fontSize: '18px', fontWeight: 900, letterSpacing: '1px', lineHeight: '1' }}>&#xB7;&#xB7;&#xB7;</span>
-                      </button>
-                      {openPostMenu === post.id && (
-                        <div className="absolute right-0 top-11 bg-white rounded-2xl shadow-2xl overflow-hidden z-50 min-w-[190px] border border-slate-100" onClick={(e) => e.stopPropagation()}>
-                          <div className="px-5 pt-4 pb-2"><span className="text-[8px] font-black text-mira-orange uppercase tracking-widest">{t(getCategoryKey(post.category), language)}</span></div>
-                          <div className="h-px bg-slate-50 mx-4 mb-1" />
-                          {isAuthor ? (
-                            <button onClick={() => { setOpenPostMenu(null); setConfirmDeleteId(post.id); }} className="w-full flex items-center gap-3 px-5 py-4 text-red-500 font-black text-xs uppercase tracking-wider hover:bg-red-50 transition-all text-left">
-                              <Trash2 size={16} /> Excluir post
-                            </button>
-                          ) : (
-                            <button onClick={() => { setOpenPostMenu(null); setReportingItem({ postId: post.id }); }} className="w-full flex items-center gap-3 px-5 py-4 text-slate-700 font-black text-xs uppercase tracking-wider hover:bg-slate-50 transition-all text-left">
-                              <ShieldAlert size={16} className="text-orange-500" /> Denunciar post
-                            </button>
-                          )}
-                          <div className="h-px bg-slate-50 mx-4" />
-                          <button onClick={() => setOpenPostMenu(null)} className="w-full text-center px-5 py-3 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all">Cancelar</button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Post Content */}
-                  <div className="absolute inset-0 z-10 flex items-center justify-center px-8">
-                    <div className="bg-black/40 backdrop-blur-xl p-10 rounded-[3.5rem] border border-white/10 shadow-2xl max-w-[340px] w-full text-center max-h-[340px] flex flex-col justify-center transform transition-transform group-hover:-translate-y-1">
-                      <div className="overflow-y-auto no-scrollbar">
-                        <p className={`font-black text-white leading-tight tracking-tight uppercase break-words drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${fontSizeClass}`}>
-                          <TranslatedText
-                            text={post.content}
-                            language={language}
-                            shouldTranslate={translatedPosts.has(post.id)}
-                          />
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Translation toggle - pinned to the bottom of the image */}
-                  <div className="absolute bottom-5 left-0 right-0 z-20 flex justify-center">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTranslatedPosts(prev => {
-                          const next = new Set(prev);
-                          if (next.has(post.id)) next.delete(post.id);
-                          else next.add(post.id);
-                          return next;
-                        });
-                      }}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl border border-white/20 backdrop-blur-md active:scale-95 ${translatedPosts.has(post.id)
-                        ? 'bg-mira-yellow text-slate-900 shadow-yellow-200'
-                        : 'bg-white/90 text-slate-700 shadow-slate-200'
-                        }`}
-                    >
-                      <Sparkles size={12} className={translatedPosts.has(post.id) ? 'fill-slate-900 text-slate-900' : 'text-mira-orange'} />
-                      {translatedPosts.has(post.id) ? (
-                        language === 'PT' ? 'Ver Original' : language === 'EN' ? 'View Original' : language === 'ES' ? 'Ver Original' : 'Voir Original'
-                      ) : (
-                        language === 'PT' ? 'Traduzir 🌐' : language === 'EN' ? 'Translate 🌐' : language === 'ES' ? 'Traducir 🌐' : 'Traduire 🌐'
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Interaction Area - Diagramação Reformulada */}
-                <div className="p-8 space-y-8">
-                  <div className="flex gap-3">
-                    <button onClick={() => handleFactVote(post.id, true)} className={`flex-1 py-4.5 rounded-[1.5rem] flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest transition-all border-2 min-h-[56px] ${userVotes[post.id] === 'true' ? 'bg-emerald-500 text-white border-emerald-500 shadow-xl shadow-emerald-100' : 'bg-white text-emerald-500 border-emerald-50 hover:bg-emerald-50'}`}>
-                      <CheckCircle size={16} /> <span className="truncate">VERDADE ({post.usefulVotes})</span>
-                    </button>
-                    <button onClick={() => handleFactVote(post.id, false)} className={`flex-1 py-4.5 rounded-[1.5rem] flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest transition-all border-2 min-h-[56px] ${userVotes[post.id] === 'false' ? 'bg-red-500 text-white border-red-500 shadow-xl shadow-red-100' : 'bg-white text-red-500 border-red-50 hover:bg-red-50'}`}>
-                      <ShieldX size={16} /> <span className="truncate">FALSO ({post.fakeVotes})</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between px-2 pt-2 gap-2">
-                    <div className="flex items-center justify-between flex-1">
-                      <button onClick={() => handleLike(post.id)} className={`flex flex-col items-center gap-1.5 group transition-all ${isPostLiked ? 'cursor-default' : 'active:scale-90'}`}>
-                        <div className={`p-4 rounded-2xl transition-all ${isPostLiked ? 'bg-mira-orange text-white shadow-lg shadow-orange-200' : 'bg-slate-50 text-slate-300 group-hover:bg-red-50'}`}>
-                          <Heart size={22} className={isPostLiked ? 'fill-white text-white' : ''} />
-                        </div>
-                        <span className="text-[9px] font-black text-slate-800 tracking-tighter">{post.likes}</span>
-                      </button>
-
-                      <button onClick={() => setCommentingOn({ postId: post.id })} className="flex flex-col items-center gap-1.5 group active:scale-90 transition-all">
-                        <div className="p-4 bg-slate-50 rounded-2xl text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-all">
-                          <MessageCircle size={22} />
-                        </div>
-                        <span className="text-[9px] font-black text-slate-800 tracking-tighter">{post.comments.length}</span>
-                      </button>
-
-                      <button
-                        onClick={() => onToggleSavePost(post.id)}
-                        className="flex flex-col items-center gap-1.5 group active:scale-90 transition-all"
-                        title="Salvar Post"
-                      >
-                        <div className={`p-4 rounded-2xl transition-all ${isPostSaved ? 'bg-mira-blue text-white shadow-lg shadow-blue-200' : 'bg-slate-50 text-slate-300'}`}>
-                          <Bookmark size={22} className={isPostSaved ? 'fill-white' : ''} />
-                        </div>
-                        <span className="text-[9px] font-black text-slate-800 tracking-tighter opacity-100">Salvar</span>
-                      </button>
-
-
-                    </div>
-                  </div>
-
-                  {post.comments.length > 0 && (
-                    <div className="mt-4 space-y-5 border-t border-slate-50 pt-8">
-                      {post.comments.map(comment => (
-                        <div key={comment.id} className="flex gap-4 items-start group/comment">
-                          <img src={comment.authorAvatar} className="w-11 h-11 rounded-2xl border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-all shrink-0" onClick={() => openMemberProfile(comment.authorId, comment.authorName || 'Membro', comment.authorAvatar || '')} alt="" referrerPolicy="no-referrer" />
-                          <div className="flex-1 bg-slate-50/70 p-5 rounded-[1.8rem] rounded-tl-none border border-slate-100 relative max-w-full overflow-hidden shadow-sm hover:bg-white hover:shadow-md transition-all">
-                            <div className="flex justify-between items-center mb-1.5">
-                              <p className="text-xs font-black text-slate-900 uppercase tracking-tight truncate">{comment.authorName}</p>
-                              <button
-                                onClick={() => setReportingItem({ postId: post.id, commentId: comment.id })}
-                                className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"
-                                title="Denunciar Comentário"
-                              >
-                                <ShieldAlert size={14} />
-                              </button>
-                            </div>
-                            <p className="text-sm text-slate-700 font-medium leading-relaxed break-words whitespace-pre-line">
-                              {translatedPosts.has(post.id) ? (
-                                <span>{comment.content}</span>
-                              ) : (
-                                <TranslatedText text={comment.content} language={language} />
-                              )}
-                            </p>
-                            <div className="flex items-center gap-6 mt-4 pt-3 border-t border-slate-200/40">
-                              <button onClick={() => handleLike(post.id, comment.id)} className={`flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-400 hover:text-red-500 transition-colors ${likedComments.has(comment.id) ? 'text-red-500 cursor-default' : ''}`}><Heart size={12} className={comment.likes > 0 ? 'fill-red-500 text-red-500' : ''} /> {comment.likes}</button>
-                              <button onClick={() => setCommentingOn({ postId: post.id, replyToName: comment.authorName })} className="flex items-center gap-1.5 text-[9px] font-black uppercase text-slate-400 hover:text-indigo-500 transition-colors"><Reply size={12} /> RESPONDER</button>
-                              <span className="text-[8px] text-slate-300 ml-auto font-bold uppercase tracking-tighter">{comment.timestamp}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          }) : <div className="flex flex-col items-center justify-center py-40 opacity-20"><Search size={64} className="mb-4" /><p className="text-xs font-black uppercase tracking-[0.3em]">Nenhum post encontrado</p></div>}
+          {filteredPosts.length > 0 ? filteredPosts.map(post => (
+            <PostCard
+              key={post.id}
+              post={post}
+              user={user}
+              language={language}
+              isPostLiked={likedPosts.has(post.id)}
+              isPostSaved={savedPostsIds.has(post.id)}
+              userVote={userVotes[post.id]}
+              translatedPosts={translatedPosts}
+              onLike={handleLike}
+              onComment={(id) => setCommentingOn({ postId: id })}
+              onToggleSave={onToggleSavePost}
+              onFactVote={handleFactVote}
+              onReport={handleReportAction}
+              onDelete={(id) => setConfirmDeleteId(id)}
+              onOpenProfile={openMemberProfile}
+              onToggleTranslate={handleToggleTranslate}
+              onReplyComment={handleReplyComment}
+              onLikeComment={handleLike}
+              onReportComment={handleReportAction}
+              openPostMenu={openPostMenu}
+              setOpenPostMenu={setOpenPostMenu}
+              getCategoryKey={getCategoryKey}
+              t={t}
+            />
+          )) : <div className="flex flex-col items-center justify-center py-40 opacity-20"><Search size={64} className="mb-4" /><p className="text-xs font-black uppercase tracking-[0.3em]">Nenhum post encontrado</p></div>}
 
           {filteredPosts.length > 0 && hasMorePosts && !searchFilter && !selectedCategory && (
-            <button
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-              className="w-full py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 bg-white border border-slate-100 hover:bg-slate-50 rounded-3xl mt-4 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-            >
-              {isLoadingMore ? <Loader2 size={16} className="animate-spin inline mr-2" /> : null}
-              {isLoadingMore ? 'A Carregar...' : 'Ver publicações mais antigas'}
-            </button>
+            <div className="w-full flex justify-center py-8">
+              <Loader2 size={24} className="animate-spin text-mira-orange opacity-40" />
+            </div>
           )}
         </div>
       </div>

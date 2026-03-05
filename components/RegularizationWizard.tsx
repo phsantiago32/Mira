@@ -1,5 +1,5 @@
 // src/components/RegularizationWizard.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, memo } from "react";
 import {
     ChevronRight, ArrowLeft, CheckCircle2, FileText, Info,
     Landmark, AlertCircle, Star, HelpCircle, Volume2, UserX, UserCheck, Briefcase, GraduationCap, Users
@@ -44,7 +44,7 @@ const TEMPLATE_META: Record<string, string> = {
     sef_declaracao_entrada: "sef_declaracao_entrada"
 };
 
-export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelectTemplate, onGoToDocs }) => {
+export const RegularizationWizard: React.FC<WizardProps> = memo(({ language, onSelectTemplate, onGoToDocs }) => {
     const [step, setStep] = useState<number>(1);
     const [answers, setAnswers] = useState<Record<string, string>>({});
 
@@ -115,13 +115,18 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
             result.desc = t("wiz_nomad_desc", language);
             result.steps = [t("wiz_nomad_step1", language), t("wiz_nomad_step2", language), t("wiz_nomad_step3", language)];
             result.docs = ["nomad_income_proof", "nif_req"];
-        } else if (purpose === "art122" || sit === "family") {
+        } else if (purpose === "art122") {
+            result.title = t("wiz_art122_title", language);
+            result.desc = t("wiz_art122_desc", language);
+            result.steps = [t("wiz_art122_step1", language), t("wiz_art122_step2", language), t("wiz_art122_step3", language)];
+            result.docs = ["aima_ar_art122", "aima_dec_responsabilidade", "aima_dec_alojamento", "certidao_civil_req"];
+        } else if (sit === "family") {
             result.title = t("wiz_family_title", language);
             result.desc = t("wiz_family_desc", language);
             result.steps = [t("wiz_family_step1", language), t("wiz_family_step2", language), t("wiz_family_step3", language)];
             result.docs = ["aima_dec_responsabilidade", "aima_dec_alojamento", "certidao_civil_req"];
         } else if (purpose === "humanitarian") {
-            result.title = t("wiz_fallback_title", language); // Or specific humanitarian keys if added
+            result.title = t("wiz_fallback_title", language);
             result.desc = "Regime de asilo e proteção especial.";
             result.steps = ["Dirigir-se ao CPR ou balcão de Asilo da AIMA", "Pedir NISS e apoio social"];
             result.docs = ["ss_niss"];
@@ -354,4 +359,4 @@ export const RegularizationWizard: React.FC<WizardProps> = ({ language, onSelect
             </div>
         </div>
     );
-};
+});

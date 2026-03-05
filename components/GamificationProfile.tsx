@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Comment, ForumPost, ViewType, Badge, Post } from '../types';
 import { FileText, Bookmark, Shield, CheckCircle2, Heart, Zap, Star, X, LogOut, ChevronRight, Award, Flame, UserCheck, ShieldAlert, Book, MapPin, Activity, Edit2, Check, CalendarCheck, Trash2, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -97,6 +96,8 @@ export const GamificationProfile: React.FC<GamificationProfileProps> = ({
             });
     }, [user]);
 
+    const syncQueue = useRef<Record<string, NodeJS.Timeout>>({});
+
     const handleTogglePreference = async (key: string) => {
         const newVal = !preferences[key];
         setPreferences((prev: any) => ({ ...prev, [key]: newVal }));
@@ -106,10 +107,16 @@ export const GamificationProfile: React.FC<GamificationProfileProps> = ({
         }
 
         if (user) {
-            await supabase.from('user_preferences').upsert({
-                user_id: user.id,
-                [key]: newVal
-            });
+            if (syncQueue.current[key]) clearTimeout(syncQueue.current[key]);
+            syncQueue.current[key] = setTimeout(async () => {
+                try {
+                    await supabase.from('user_preferences').upsert({
+                        user_id: user.id,
+                        [key]: newVal
+                    });
+                } catch (e) { }
+                delete syncQueue.current[key];
+            }, 800);
         }
     };
 
@@ -178,6 +185,7 @@ export const GamificationProfile: React.FC<GamificationProfileProps> = ({
                                         alt="Profile"
                                         className="w-full h-full rounded-[2.1rem] object-cover bg-slate-100"
                                         referrerPolicy="no-referrer"
+                                        loading="lazy"
                                         onError={(e) => { const t = e.target as HTMLImageElement; t.onerror = null; t.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=f97316&color=fff&bold=true&size=200`; }}
                                     />
                                 </div>
@@ -231,7 +239,7 @@ export const GamificationProfile: React.FC<GamificationProfileProps> = ({
                                             onClick={() => setEditAvatar(url)}
                                             className={`relative aspect-square rounded-2xl overflow-hidden transition-all active:scale-90 ${editAvatar === url ? 'ring-4 ring-mira-orange shadow-lg scale-95' : 'opacity-60 grayscale hover:grayscale-0 hover:opacity-100'}`}
                                         >
-                                            <img src={url} alt="" className="w-full h-full object-cover bg-slate-100" referrerPolicy="no-referrer" onError={(e) => { const t = e.target as HTMLImageElement; t.onerror = null; t.src = `https://ui-avatars.com/api/?name=Avatar&background=e2e8f0&color=94a3b8&bold=true&size=200`; }} />
+                                            <img src={url} alt="" className="w-full h-full object-cover bg-slate-100" referrerPolicy="no-referrer" loading="lazy" onError={(e) => { const t = e.target as HTMLImageElement; t.onerror = null; t.src = `https://ui-avatars.com/api/?name=Avatar&background=e2e8f0&color=94a3b8&bold=true&size=200`; }} />
                                             {editAvatar === url && (
                                                 <div className="absolute inset-0 bg-mira-orange/10 flex items-center justify-center">
                                                     <div className="bg-mira-orange text-white rounded-full p-1 shadow-sm">
@@ -267,7 +275,7 @@ export const GamificationProfile: React.FC<GamificationProfileProps> = ({
                     </div>
                     <div className="bg-white p-3 rounded-2xl flex flex-col items-center justify-center text-slate-900 border border-slate-100 shadow-sm">
                         <Zap size={18} className="mb-1 text-mira-orange" />
-                        <span className="font-black text-sm">{impact}</span>
+                        <span className="font-black text-sm">{user?.reputation || 0}</span>
                         <span className="text-[7px] font-black uppercase tracking-tighter opacity-40">Impacto</span>
                     </div>
                     <div className="bg-white p-3 rounded-2xl flex flex-col items-center justify-center text-slate-900 border border-slate-100 shadow-sm">
@@ -334,7 +342,7 @@ export const GamificationProfile: React.FC<GamificationProfileProps> = ({
                                 className="flex gap-4 p-4 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm hover:shadow-md transition-all cursor-pointer group overflow-hidden"
                             >
                                 <div className="w-20 h-20 rounded-[1.8rem] overflow-hidden shrink-0 border border-slate-50 shadow-inner">
-                                    <img src={post.backgroundImage} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                                    <img src={post.backgroundImage} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" loading="lazy" />
                                 </div>
                                 <div className="flex flex-col justify-center min-w-0 flex-1">
                                     <span className="text-[8px] font-black bg-mira-blue-pastel text-mira-blue px-3 py-1 rounded-full uppercase tracking-widest w-fit mb-2">{post.category}</span>

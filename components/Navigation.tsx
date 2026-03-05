@@ -20,7 +20,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange, lang
   ];
 
   return (
-    <nav className="bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 pb-[max(env(safe-area-inset-bottom, 20px), 2rem)] pt-3 flex justify-around items-center md:flex-col md:w-24 md:h-full md:border-r md:border-t-0 md:px-0 md:py-10 transition-all duration-300 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-50">
+    <nav className="bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 pb-[max(env(safe-area-inset-bottom, 2px), 0.5rem)] pt-3 flex justify-around items-center md:flex-col md:w-24 md:h-full md:border-r md:border-t-0 md:px-0 md:py-10 transition-all duration-300 shadow-[0_-5px_20px_rgba(0,0,0,0.05)] z-50 mb-2">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = currentView === item.id;
@@ -29,7 +29,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onViewChange, lang
           <button
             key={item.id}
             onClick={() => onViewChange(item.id)}
-            className={`flex flex-col items-center justify-center gap-1 group transition-all duration-300 md:w-16 md:h-16 ${isActive ? 'text-mira-orange' : 'text-slate-400 hover:text-slate-600'
+            className={`flex flex-col items-center justify-center gap-1 group transition-all duration-300 active:scale-90 md:w-16 md:h-16 ${isActive ? 'text-mira-orange' : 'text-slate-400 hover:text-slate-600'
               }`}
           >
             <div className={`p-1 transition-all duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}>
