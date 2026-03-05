@@ -39,9 +39,9 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
             const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
             const { data, error } = await supabase
                 .from('service_reports')
-                .select('service_id, status, created_at')
-                .gte('created_at', oneHourAgo)
-                .order('created_at', { ascending: false });
+                .select('service_id, status, reported_at')
+                .gte('reported_at', oneHourAgo)
+                .order('reported_at', { ascending: false });
 
             if (!error && data) {
                 const latestStatuses: Record<string, string> = {};
@@ -132,13 +132,13 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
         }
     };
 
-    const fetchReviewsForService = async (serviceName: string) => {
+    const fetchReviewsForService = async (serviceId: string) => {
         setLoadingReviews(true);
         try {
             const { data, error } = await supabase
-                .from('complaints')
+                .from('service_ratings')
                 .select('*')
-                .ilike('subject', `%Avaliação de Serviço: ${serviceName}%`)
+                .eq('service_id', serviceId)
                 .order('created_at', { ascending: false });
 
             if (!error && data) {
@@ -159,7 +159,7 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
             setServiceReviews([]);
         } else {
             setExpandedServiceId(service.id);
-            fetchReviewsForService(service.title);
+            fetchReviewsForService(service.id);
         }
     };
 
@@ -177,55 +177,26 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
             const { data: { user: authUser } } = await supabase.auth.getUser();
             const serviceName = services.find(s => s.id === selectedServiceId)?.title || 'Serviço Desconhecido';
 
-            // 1. Fetch all existing reviews to calculate true average (Trustpilot style)
-            const { data: existingReviews } = await supabase
-                .from('complaints')
-                .select('subject')
-                .ilike('subject', `%Avaliação de Serviço: ${serviceName}%`);
+            // Insert new rating directly into service_ratings (Trigger auto-updates avg_rating on map_alerts)
+            await supabase.from('service_ratings').insert([{
+                service_id: selectedServiceId,
+                user_id: authUser?.id,
+                stars: ratingStars,
+                comment: reviewText
+            }]);
 
-            let totalStars = ratingStars; // Include the new rating
-            let count = 1;
+            // Optimistically update UI locally
+            const optimisticReview = {
+                id: `opt-${Date.now()}`,
+                stars: ratingStars,
+                comment: reviewText,
+                created_at: new Date().toISOString()
+            };
+            setServiceReviews(prev => [optimisticReview, ...prev]);
 
-            if (existingReviews) {
-                existingReviews.forEach(r => {
-                    const match = r.subject.match(/\((\d)/);
-                    if (match) {
-                        totalStars += parseInt(match[1], 10);
-                        count++;
-                    }
-                });
-            }
-
-            const trueAverage = Number((totalStars / count).toFixed(1));
-
-            // 2. Update service with true computed average
-            await supabase.from('map_alerts').update({
-                avg_rating: trueAverage
-            }).eq('id', selectedServiceId);
-
-            // Update UI immediately
-            setServices(prev => prev.map(s => s.id === selectedServiceId ? { ...s, avgRating: trueAverage } : s));
-            setFilteredServices(prev => prev.map(s => s.id === selectedServiceId ? { ...s, avgRating: trueAverage } : s));
-
-
-            if (reviewText.trim().length > 0) {
-                await submitReportRest('service_rating', `Serviço: ${serviceName} - Avaliação: ${ratingStars} estrelas\nMensagem: ${reviewText}`);
-
-                // Optimistically add the new review to local state so it shows instantly
-                const optimisticReview = {
-                    id: `opt-${Date.now()}`,
-                    subject: `Avaliação de Serviço: ${serviceName} (${ratingStars} estrelas)`,
-                    content: reviewText,
-                    created_at: new Date().toISOString()
-                };
-                setServiceReviews(prev => [optimisticReview, ...prev]);
-            }
-
-            // Auto-expand the reviews section for this service so the user can see it
             setExpandedServiceId(selectedServiceId);
             if (reviewText.trim().length === 0) {
-                // If no text, still fetch to show existing reviews
-                fetchReviewsForService(serviceName);
+                fetchReviewsForService(selectedServiceId);
             }
 
             showToast(t('service_rate_success', language) || "Avaliação enviada com sucesso!", 'success');
@@ -248,12 +219,23 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
     const submitQueueReport = async () => {
         if (!selectedServiceId || isSubmitting) return;
         setIsSubmitting(true);
-        // Optimistic update: show badge immediately on the service card
+
         const serviceIdForUpdate = selectedServiceId;
         const statusForUpdate = queueStatus;
-        setQueueStatuses(prev => ({ ...prev, [serviceIdForUpdate]: statusForUpdate }));
+        const serviceName = services.find(s => s.id === selectedServiceId)?.title || 'Serviço Desconhecido';
+
         try {
-            await submitReportRest('service_queue', `Serviço: Serviço ID ${serviceIdForUpdate}\nFila reportada como: ${statusForUpdate.toUpperCase()}`);
+            const { data: { user } } = await supabase.auth.getUser();
+            await supabase.from('service_reports').insert([{
+                service_id: serviceIdForUpdate,
+                service_title: serviceName,
+                status: statusForUpdate,
+                user_id: user?.id
+            }]);
+
+            // Optimistic update
+            setQueueStatuses(prev => ({ ...prev, [serviceIdForUpdate]: statusForUpdate }));
+
             showToast(t('service_queue_reported', language) || "Estado da fila atualizado!", 'success');
             setQueueModalOpen(false);
         } catch (err) {
@@ -462,9 +444,7 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                                 <div className="text-center py-6 text-slate-300 flex justify-center"><RefreshCcw className="animate-spin" size={20} /></div>
                                             ) : serviceReviews.length > 0 ? (
                                                 serviceReviews.map(r => {
-                                                    // Extrair nivel de estrela do subject (e.g. "Avaliação de Serviço: Teste (5 estrelas)")
-                                                    const starMatch = r.subject.match(/\((\d)/);
-                                                    const st = starMatch ? parseInt(starMatch[1], 10) : 5;
+                                                    const st = r.stars || 5;
                                                     return (
                                                         <div key={r.id} className="bg-slate-50 p-4 rounded-2xl border border-transparent flex flex-col gap-2">
                                                             <div className="flex justify-between items-start">
@@ -475,7 +455,7 @@ export const LocalServicesList: React.FC<LocalServicesListProps> = ({ language }
                                                                     {new Date(r.created_at).toLocaleDateString()}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-xs font-bold text-slate-600 leading-relaxed">"{r.content}"</p>
+                                                            <p className="text-xs font-bold text-slate-600 leading-relaxed">"{r.comment || 'Sem comentário detalhado'}"</p>
                                                         </div>
                                                     )
                                                 })
