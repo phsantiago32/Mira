@@ -41,6 +41,8 @@ interface CommunityViewProps {
   setMasterPosts: React.Dispatch<React.SetStateAction<Post[]>>;
   savedPostsIds: Set<string>;
   onToggleSavePost: (postId: string) => void;
+  targetPostId?: string | null;
+  onClearTargetPost?: () => void;
 }
 
 const THEMED_IMAGES = [
@@ -64,7 +66,7 @@ const THEMED_IMAGES = [
 
 
 const CommunityView: React.FC<CommunityViewProps> = ({
-  language, user, onViewChange, onEarnPoints, masterPosts, setMasterPosts, savedPostsIds, onToggleSavePost
+  language, user, onViewChange, onEarnPoints, masterPosts, setMasterPosts, savedPostsIds, onToggleSavePost, targetPostId, onClearTargetPost
 }) => {
   const [activeCategory, setActiveCategory] = useState<string>('Todos');
   const [searchFilter, setSearchFilter] = useState('');
@@ -122,6 +124,25 @@ const CommunityView: React.FC<CommunityViewProps> = ({
       setIsLoadingMore(false);
     }
   };
+
+  useEffect(() => {
+    if (targetPostId) {
+      setTimeout(() => {
+        const el = document.getElementById(`post-${targetPostId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-4', 'ring-blue-500/50', 'ring-offset-4', 'transition-all', 'duration-1000');
+          setTimeout(() => {
+            el.classList.remove('ring-4', 'ring-blue-500/50', 'ring-offset-4', 'transition-all', 'duration-1000');
+            if (onClearTargetPost) onClearTargetPost();
+          }, 2000);
+        } else {
+          // Maybe we need to load more? For now just try.
+          if (onClearTargetPost) onClearTargetPost();
+        }
+      }, 500); // small delay to let DOM paint
+    }
+  }, [targetPostId, masterPosts]);
 
   const topStories = useMemo(() => {
     return [...masterPosts].sort((a, b) => {

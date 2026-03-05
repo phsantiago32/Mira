@@ -12,9 +12,10 @@ import { PROTECTED_JOBS, PROTECTED_SERVICES } from '../utils/protectedData';
 
 interface AdminHubProps {
     onBack: () => void;
+    onNavigateToPost?: (postId: string) => void;
 }
 
-export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
+export const AdminHub: React.FC<AdminHubProps> = ({ onBack, onNavigateToPost }) => {
     const [activeTab, setActiveTab] = useState<'users' | 'content' | 'suggestions' | 'knowledge'>('users');
     const [users, setUsers] = useState<User[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
@@ -301,10 +302,16 @@ export const AdminHub: React.FC<AdminHubProps> = ({ onBack }) => {
                                                     <div className="flex justify-between items-center mb-1">
                                                         <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 block">Conteúdo Original</span>
                                                         <button
-                                                            onClick={() => setExpandedIds(prev => { const n = new Set(prev); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n; })}
-                                                            className="text-[9px] font-black text-blue-400 uppercase tracking-widest"
+                                                            onClick={() => {
+                                                                if (onNavigateToPost && r.post_id) {
+                                                                    onNavigateToPost(r.post_id);
+                                                                } else {
+                                                                    alert('Post ID não encontrado para esta denúncia.');
+                                                                }
+                                                            }}
+                                                            className="text-[9px] font-black text-blue-400 uppercase tracking-widest hover:text-blue-500 transition-colors bg-blue-50/50 px-3 py-1.5 rounded-lg active:scale-95"
                                                         >
-                                                            {expandedIds.has(r.id) ? 'Ocultar' : 'Aceder ao Conteúdo Completo'}
+                                                            Aceder ao Conteúdo Completo
                                                         </button>
                                                     </div>
                                                     <p className={`text-[11px] font-medium text-slate-400 italic bg-slate-900/50 p-2 rounded-xl border border-slate-800 ${expandedIds.has(r.id) ? 'line-clamp-none overflow-visible' : 'line-clamp-3 overflow-hidden'}`}>

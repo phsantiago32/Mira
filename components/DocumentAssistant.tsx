@@ -212,6 +212,9 @@ export const DocumentAssistant: React.FC<DocumentAssistantProps> = ({
                                         <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>
                                 </div>
+                                <p className="text-[11px] text-center font-bold text-slate-500 mt-2 bg-slate-50 p-4 rounded-xl border border-slate-100 leading-relaxed shadow-sm">
+                                    Selecione um documento da lista abaixo, preencha os seus dados de forma rápida e baixe o formulário em <strong className="text-mira-orange">PDF preenchido e pronto a entregar</strong>.
+                                </p>
                             </div>
                         )}
                     </div>

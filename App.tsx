@@ -53,6 +53,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewType>(ViewType.HOME);
   const [showConsent, setShowConsent] = useState(false);
   const [points, setPoints] = useState(0);
+  const [targetPostId, setTargetPostId] = useState<string | null>(null);
 
   const [language, setLanguage] = useState(() => {
     const saved = localStorage.getItem('mira_language');
@@ -293,7 +294,7 @@ const App: React.FC = () => {
     const lowerLang = language.toLowerCase().substring(0, 2);
     switch (currentView) {
       case ViewType.HOME: return <HomeView user={user} onViewChange={setCurrentView} language={language} onLogout={handleLogoutAction} />;
-      case ViewType.COMMUNITY: return <CommunityView language={language} user={user} onViewChange={setCurrentView} onEarnPoints={setPoints} masterPosts={masterPosts} setMasterPosts={setMasterPosts} savedPostsIds={savedPostsIds} onToggleSavePost={handleToggleSavePost} />;
+      case ViewType.COMMUNITY: return <CommunityView language={language} user={user} onViewChange={setCurrentView} onEarnPoints={setPoints} masterPosts={masterPosts} setMasterPosts={setMasterPosts} savedPostsIds={savedPostsIds} onToggleSavePost={handleToggleSavePost} targetPostId={targetPostId} onClearTargetPost={() => setTargetPostId(null)} />;
       case ViewType.ASSISTANT: return <AssistantView language={language} />;
       case ViewType.JOBS: return <JobBoard language={language} isAdmin={user.role === 'admin'} />;
       case ViewType.MAP: return <LocalServicesList language={language} />;
@@ -306,7 +307,7 @@ const App: React.FC = () => {
         localStorage.removeItem('mira_consent_given');
         alert("Base de dados de utilizadores limpa com sucesso (Simulação).");
       }} />;
-      case ViewType.ADMIN_HUB: return <AdminHub onBack={() => setCurrentView(ViewType.DASHBOARD)} />;
+      case ViewType.ADMIN_HUB: return <AdminHub onBack={() => setCurrentView(ViewType.DASHBOARD)} onNavigateToPost={(postId) => { setTargetPostId(postId); setCurrentView(ViewType.COMMUNITY); }} />;
       case ViewType.PRIVACY: return <PrivacyPage language={language} />;
       default: return <HomeView user={user} onViewChange={setCurrentView} language={language} />;
     }
