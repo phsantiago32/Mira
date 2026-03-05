@@ -44,61 +44,11 @@ export const generateAssistantResponse = async (prompt: string, history: { role:
 
       if (error) throw new Error(error.message);
       if (data && data.text) return data;
+
+      throw new Error("No text returned from Gemini Assistant Edge Function");
     } catch (edgeError) {
-      console.warn("Edge function failed, attempting direct REST fallback...", edgeError);
-
-      const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
-      if (apiKey) {
-        const contextString = `${communityContext || ''}\n${APP_MODULES_CONTEXT}\nCONHECIMENTO ADICIONAL ADMIN:\n${additionalKnowledge}\n\nYou are MIRA, a friendly, welcoming, and integrating assistant... Answer in ${languageNames[language] || language}.\n\n`;
-
-        let contents = [];
-        if (history && history.length > 0) {
-          // Copy history and ensure alternating roles
-          contents = history.map(msg => ({
-            role: msg.role === 'assistant' || msg.role === 'model' ? 'model' : 'user',
-            parts: msg.parts
-          }));
-          // Inject context into the very first user message
-          if (contents[0].role === 'user') {
-            contents[0].parts[0].text = contextString + contents[0].parts[0].text;
-          }
-          contents.push({ role: 'user', parts: [{ text: prompt }] });
-        } else {
-          contents = [{ role: 'user', parts: [{ text: contextString + "User: " + prompt }] }];
-        }
-
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: contents,
-              generationConfig: { temperature: 0.7, maxOutputTokens: 1000 }
-            })
-          }
-        );
-
-        if (response.ok) {
-          const result = await response.json();
-          const generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-          if (generatedText) {
-            return { text: generatedText, category: "Comunidade & Solidariedade" };
-          }
-        } else {
-          const errBody = await response.text();
-          console.error("Gemini REST Return Error 400/500/404/429:", errBody);
-
-          // DEMO/DEV FALLBACK: Se houver erro de chave, retornar mock de demonstração.
-          if (response.status === 400 || response.status === 403 || response.status === 404 || response.status === 429) {
-            return {
-              text: "Olá! Recebi a sua mensagem: '" + prompt + "'.\n\nA inteligência do MIRA está ativa, mas acabamos de atingir o limite gratuito do Google (429 Rate Limit). Por favor, aguarde uns segundos e tente perguntar novamente!\n" + (additionalKnowledge ? "\nDe acordo com o Saber IA oficial:\n" + additionalKnowledge : ""),
-              category: "Limite Temporário"
-            };
-          }
-        }
-      }
-      throw new Error("Both Edge Function and REST Fallback failed");
+      console.error("Gemini Edge Function Error:", edgeError);
+      throw edgeError;
     }
 
   } catch (error) {
@@ -152,32 +102,7 @@ export const autoTranslateText = async (text: string, targetLanguage: string): P
   const targetLangName = languageNames[langKey] || langKey;
 
   try {
-    const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
-    if (apiKey) {
-      const prompt = `Translate the following text to ${targetLangName}. Return ONLY the translated text, no explanations, no quotes, no extra text:\n\n${text}`;
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.1, maxOutputTokens: 500 }
-          })
-        }
-      );
-      if (response.ok) {
-        const result = await response.json();
-        const translated = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (translated) return translated;
-      }
-    }
-  } catch (error) {
-    console.warn("Gemini translation failed, falling back to Google Translate:", error);
-  }
-
-  try {
-    // Attempt 2: Highly reliable public Google Translate API (No API key needed)
+    // Attempt 1: Highly reliable public Google Translate API (No API key needed)
     // This solves the issue if Gemini key is missing, rate-limited, or dev server hasn't restarted
     const tl = langKey.toLowerCase();
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
